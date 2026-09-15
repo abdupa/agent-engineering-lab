@@ -1,0 +1,105 @@
+import type { RetrievalScenario } from './evaluate';
+export const corpus = [
+  'red apple',
+  'green apple',
+  'blue berry',
+  'automobile',
+].map((text, index) => ({
+  id: `c${index}`,
+  documentId: 'doc',
+  source: 'fixture',
+  index,
+  text,
+}));
+export const lexicalScenarios: RetrievalScenario[] = [
+  {
+    name: 'exact lexical match',
+    corpus,
+    query: { text: 'red apple', topK: 1 },
+    relevantIds: ['c0'],
+    expectedOrder: ['c0'],
+    expectedMetrics: { precision: 1, recall: 1 },
+  },
+  {
+    name: 'partial retrieval penalizes unfilled K',
+    corpus,
+    query: { text: 'red', topK: 5 },
+    relevantIds: ['c0', 'c1'],
+    expectedOrder: ['c0'],
+    expectedMetrics: { precision: 0.2, recall: 0.5 },
+  },
+  {
+    name: 'multiple relevant chunks and stable ties',
+    corpus,
+    query: { text: 'apple', topK: 5 },
+    relevantIds: ['c0', 'c1', 'c1'],
+    expectedOrder: ['c0', 'c1'],
+    expectedMetrics: { precision: 0.4, recall: 1 },
+  },
+  {
+    name: 'topK truncation',
+    corpus,
+    query: { text: 'apple', topK: 1 },
+    relevantIds: ['c0', 'c1'],
+    expectedOrder: ['c0'],
+    expectedMetrics: { precision: 1, recall: 0.5 },
+  },
+  {
+    name: 'missing lexical evidence',
+    corpus,
+    query: { text: 'car', topK: 1 },
+    relevantIds: ['c3'],
+    expectedOrder: [],
+    expectedMetrics: { precision: 0, recall: 0 },
+  },
+  {
+    name: 'no relevant labels',
+    corpus,
+    query: { text: 'unknown', topK: 2 },
+    relevantIds: [],
+    expectedOrder: [],
+    expectedMetrics: { precision: 0, recall: null },
+  },
+];
+export const semanticScenarios: RetrievalScenario[] = [
+  {
+    name: 'controlled car query ranks labeled automobile first',
+    corpus,
+    query: { text: 'car', topK: 1 },
+    relevantIds: ['c3'],
+    expectedOrder: ['c3'],
+    expectedMetrics: { precision: 1, recall: 1 },
+  },
+  {
+    name: 'semantic ties preserve supplied order',
+    corpus,
+    query: { text: 'fruit', topK: 2 },
+    relevantIds: ['c0', 'c1'],
+    expectedOrder: ['c0', 'c1'],
+    expectedMetrics: { precision: 1, recall: 1 },
+  },
+  {
+    name: 'unthresholded retrieval can return no useful evidence',
+    corpus,
+    query: { text: 'car', topK: 1 },
+    relevantIds: ['c2'],
+    expectedOrder: ['c3'],
+    expectedMetrics: { precision: 0, recall: 0 },
+  },
+  {
+    name: 'returned matches do not make undefined recall defined',
+    corpus,
+    query: { text: 'car', topK: 1 },
+    relevantIds: [],
+    expectedOrder: ['c3'],
+    expectedMetrics: { precision: 0, recall: null },
+  },
+];
+export const fakeVectors: Record<string, number[]> = {
+  'red apple': [1, 0],
+  'green apple': [1, 0],
+  'blue berry': [0, -1],
+  automobile: [0, 1],
+  car: [0, 1],
+  fruit: [1, 0],
+};

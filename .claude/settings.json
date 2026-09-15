@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm verify:*)",
+      "Bash(pnpm format:check:*)",
+      "Bash(apps/api/node_modules/.bin/jest:*)",
+      "Bash(apps/api/node_modules/.bin/tsc:*)",
+      "Bash(node_modules/.bin/eslint:*)",
+      "Bash(node_modules/.bin/prettier:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  }
+}
