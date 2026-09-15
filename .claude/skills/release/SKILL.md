@@ -19,6 +19,10 @@ something the product actually needs should be built instead.
 The SPEC also states: goal, architecture direction, preserved boundaries, required
 distinctions, milestones with exit criteria, non-goals, and what it will not prove.
 
+It must also carry **the reliability policy and what the release emits** — the twelve
+questions in [docs/CROSS_CUTTING.md](../../../docs/CROSS_CUTTING.md). A SPEC missing
+those is incomplete, regardless of how well the capability is specified.
+
 ## 2 · Build
 
 One milestone at a time. Tests and documentation are part of the implementation, not

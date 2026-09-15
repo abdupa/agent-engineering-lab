@@ -32,7 +32,8 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for the release plan.
 4. Provider details stay behind application interfaces.
 5. Validate AI-generated structured data at runtime. Types are not validation.
 6. Agents propose. Deterministic software validates, authorizes and executes.
-7. Reliability, testing, security and observability are part of the feature.
+7. Reliability, testing, security and observability are part of the feature — never
+   cleanup work, never a later release. See [docs/CROSS_CUTTING.md](docs/CROSS_CUTTING.md).
 8. Significant architecture decisions are recorded as ADRs.
 
 ## Claim discipline
@@ -58,6 +59,16 @@ A release is not earned by appearing in the roadmap. Each `SPEC.md` must open wi
 
 A concrete user need, stated before any code. If you cannot name one, the release is
 not ready — build what the product actually needs instead, and let the roadmap wait.
+
+## Every release carries its cross-cutting obligations
+
+Alongside that requirement, each SPEC states **its reliability policy and what it emits**.
+A pattern with no failure policy is not finished; a pattern you cannot observe is not
+operable. [docs/CROSS_CUTTING.md](docs/CROSS_CUTTING.md) holds the twelve questions every
+SPEC answers, and the new surface each planned pattern introduces.
+
+These are obligations carried by every release, not a release of their own. Nothing on
+the roadmap is allowed to become "the observability release".
 
 ## Decision authority
 

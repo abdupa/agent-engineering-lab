@@ -56,6 +56,9 @@ and why [docs/PATTERNS.md](PATTERNS.md) records a decision for every one of the 
   judge it against something you have built, not against its marketing.
 - **Evaluation fluency.** The scarcest skill in this field. Most engineers can wire an
   agent; very few can produce an evaluation claim they would defend to a skeptic.
+- **Operability.** Every pattern here states its failure policy and what it emits before
+  it is called done — see [CROSS_CUTTING.md](CROSS_CUTTING.md). The question a client
+  eventually asks is not "does it work?" but "how will we know when it stops?"
 - **Production instinct.** Auth, deploys, incidents, cost and data lifecycle are not
   overhead here — they are half the subject, and a real product is the only way to
   meet them.

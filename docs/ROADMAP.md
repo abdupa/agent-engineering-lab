@@ -36,6 +36,17 @@ A roadmap entry is not authorization. [CURRENT.md](CURRENT.md) names what is act
 | 13 | **v1.8 — Hybrid retrieval & provenance** | #4 (completion) | Semantic search misses exact terms, and a reader needs to know where a claim came from. |
 | 14 | **v2.0 — Extraction** | — | Patterns that proved themselves in production become reusable deliberately, not by accident. |
 
+### Every row above also carries
+
+Reliability and observability are not rows in this table because they are obligations of
+**all** of them. Each release states its failure policy and what it emits, per
+[CROSS_CUTTING.md](CROSS_CUTTING.md) — which also names the specific new surface each of
+these introduces. Async execution (v0.8) and code execution (v1.3) are far larger jumps
+than their one-line requirements suggest.
+
+The predecessor repository did this by giving every layer its own instrumentation
+milestone. Same obligation here, enforced through the SPEC instead of the schedule.
+
 ### Ordering notes
 
 **Evaluation (v1.0) sits deliberately early.** It is the instrument every later decision

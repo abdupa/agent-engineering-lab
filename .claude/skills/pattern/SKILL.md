@@ -42,12 +42,24 @@ faster afterwards.
    possible. A baseline you can explain beats a sophisticated one you cannot.
 3. **The boundary it must not cross.** State what this pattern is *not* allowed to do,
    and test that it does not.
-4. **Failure modes.** What happens on invalid input, timeout, cancellation, empty
-   result, partial result? Each gets a test.
-5. **Evaluation.** Labeled fixtures with exact expected outcomes where policy defines
-   them.
-6. **Limits.** What the tests prove, and what they do not. Run `/claims-audit`.
-7. **ADR** if the decision shapes future architecture.
+4. **Reliability policy.** Failure modes — invalid input, timeout, cancellation, empty
+   result, partial result, dependency unavailable. Which are retryable and under what
+   budget; which are terminal. Whether it fails open or closed, and why. If it has real
+   side effects, what makes repetition safe. Each gets a test.
+5. **Observability.** What it emits on success, on failure, and at boundaries. What must
+   **never** be emitted — payloads, prompts, credentials, memory contents, permission
+   grants, raw provider errors. How correlation flows through it. Then the acceptance
+   test: *given only the logs, can an operator say which boundary failed?* If not, the
+   pattern is not done.
+6. **Evaluation.** Labeled fixtures with exact expected outcomes where policy defines
+   them. What would a regression look like?
+7. **Limits.** What the tests prove, and what they do not. Run `/claims-audit`.
+8. **ADR** if the decision shapes future architecture.
+
+Steps 4 and 5 are not optional and not deferrable. See
+[docs/CROSS_CUTTING.md](../../../docs/CROSS_CUTTING.md) for the twelve questions and for
+the new surface each planned pattern introduces — async execution and code execution in
+particular are much larger jumps than they look.
 
 ## Required distinctions
 

@@ -15,6 +15,7 @@ everything deliberately left out.
 | [docs/PATTERNS.md](docs/PATTERNS.md) | Which agent architectures do we build, and which do we not? |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | In what order, and what earns each release? |
 | [docs/CURRENT.md](docs/CURRENT.md) | What is active right now? |
+| [docs/CROSS_CUTTING.md](docs/CROSS_CUTTING.md) | What every pattern owes regardless of what it does |
 | [docs/DECISION_POLICY.md](docs/DECISION_POLICY.md) | Who decides what, and when do we stop and ask? |
 | [docs/adr/](docs/adr/) | Why was a significant decision made? |
 
