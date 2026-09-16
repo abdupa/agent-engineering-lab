@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { Logger } from '@nestjs/common';
 import { observeOpenAIFetch } from './openai-observability';
 import { requestContext } from '../observability/request-context';
+import { withUsage } from '../observability/usage';
 import { z } from 'zod';
 import type { ModelProvider } from './model-provider';
 import { ModelProviderError } from './model-provider.error';
@@ -58,6 +59,25 @@ describe('OpenAIModelProvider', () => {
     fetchMock.mockResolvedValue(
       new Response(
         JSON.stringify({ id: 'resp_test', object: 'response', status, output }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+  }
+
+  function respondWithUsage(
+    output: unknown[],
+    usage: unknown,
+    status = 'completed',
+  ) {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'resp_test',
+          object: 'response',
+          status,
+          output,
+          usage,
+        }),
         { headers: { 'Content-Type': 'application/json' } },
       ),
     );
@@ -348,6 +368,8 @@ describe('OpenAIModelProvider', () => {
     });
     expect(logs).toHaveBeenNthCalledWith(3, {
       event: 'provider_execution',
+      inputTokens: expect.any(Number) as unknown,
+      outputTokens: expect.any(Number) as unknown,
       requestId,
       provider: 'openai',
       model: 'configured-model',
@@ -369,6 +391,8 @@ describe('OpenAIModelProvider', () => {
     ).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
     expect(logs).toHaveBeenLastCalledWith({
       event: 'provider_execution',
+      inputTokens: expect.any(Number) as unknown,
+      outputTokens: expect.any(Number) as unknown,
       provider: 'openai',
       model: 'configured-model',
       attempt: 1,
@@ -388,6 +412,8 @@ describe('OpenAIModelProvider', () => {
     expect(logs).toHaveBeenCalledTimes(1);
     expect(logs).toHaveBeenCalledWith({
       event: 'provider_execution',
+      inputTokens: expect.any(Number) as unknown,
+      outputTokens: expect.any(Number) as unknown,
       provider: 'openai',
       model: 'configured-model',
       attempt: 0,
@@ -421,6 +447,8 @@ describe('OpenAIModelProvider', () => {
     for (const requestId of ['request-one', 'request-two']) {
       expect(logs).toHaveBeenCalledWith({
         event: 'provider_execution',
+        inputTokens: expect.any(Number) as unknown,
+        outputTokens: expect.any(Number) as unknown,
         requestId,
         provider: 'openai',
         model: 'configured-model',
@@ -430,5 +458,89 @@ describe('OpenAIModelProvider', () => {
       });
     }
     expect(logs).toHaveBeenCalledTimes(4);
+  });
+
+  describe('token accounting', () => {
+    it('records the tokens a successful generation reported', async () => {
+      respondWithUsage([message('{"summary":"Example","tags":[]}')], {
+        input_tokens: 412,
+        output_tokens: 37,
+        total_tokens: 449,
+      });
+
+      const { usage } = await withUsage(() =>
+        provider.generateStructured(generationRequest),
+      );
+
+      expect(usage).toEqual({
+        calls: 1,
+        inputTokens: 412,
+        outputTokens: 37,
+        totalTokens: 449,
+      });
+    });
+
+    it('records a refusal, which is billed like any other response', async () => {
+      respondWithUsage(
+        [
+          {
+            type: 'message',
+            id: 'msg_test',
+            role: 'assistant',
+            status: 'completed',
+            content: [{ type: 'refusal', refusal: 'no' }],
+          },
+        ],
+        { input_tokens: 300, output_tokens: 12, total_tokens: 312 },
+      );
+
+      const { usage } = await withUsage(async () => {
+        await expect(
+          provider.generateStructured(generationRequest),
+        ).rejects.toMatchObject({ code: 'REFUSED' });
+        return null;
+      });
+
+      // Counting only successes would under-report what was actually spent.
+      expect(usage.calls).toBe(1);
+      expect(usage.totalTokens).toBe(312);
+    });
+
+    it('still counts the call when the provider reports no usage block', async () => {
+      respond([message('{"summary":"Example","tags":[]}')]);
+
+      const { usage } = await withUsage(() =>
+        provider.generateStructured(generationRequest),
+      );
+
+      expect(usage).toEqual({
+        calls: 1,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+      });
+    });
+
+    it('logs tokens on the execution summary, correlated and without payload', async () => {
+      respondWithUsage([message('{"summary":"Example","tags":[]}')], {
+        input_tokens: 10,
+        output_tokens: 2,
+      });
+
+      await requestContext.run({ requestId: 'usage-correlation' }, () =>
+        provider.generateStructured(generationRequest),
+      );
+
+      const entry = logs.mock.calls
+        .map(([value]) => value as Record<string, unknown>)
+        .find((value) => value?.event === 'provider_execution');
+      expect(entry).toMatchObject({
+        requestId: 'usage-correlation',
+        inputTokens: 10,
+        outputTokens: 2,
+        outcome: 'success',
+      });
+      expect(JSON.stringify(entry)).not.toContain('Example');
+    });
   });
 });

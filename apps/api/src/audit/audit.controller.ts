@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { z } from 'zod';
 import { correlationFields } from '../observability/request-context';
+import { withUsage } from '../observability/usage';
+import type { UsageTotals } from '../observability/usage';
 import type { AgentRunErrorCode } from '../agent/agent-run.error';
 import { AuditService } from './audit.service';
 import { AUDIT_WORKSPACE } from './audit.tokens';
@@ -31,6 +33,8 @@ export interface AuditResponse {
   summary: string;
   toolCalls: number;
   findings: Finding[];
+  /** What this run spent. Cost is not included: rates are not ours to assume. */
+  usage: UsageTotals;
 }
 
 /** Applied only when the run produced nothing; partial work is delivered instead. */
@@ -69,10 +73,10 @@ export class AuditController {
     const parsed = AuditRequestSchema.safeParse(body ?? {});
     if (!parsed.success) throw new BadRequestException('Invalid audit request');
 
-    const { report, failure } = await this.auditService.audit(
-      this.workspace,
-      parsed.data.rubric,
+    const { result, usage } = await withUsage(() =>
+      this.auditService.audit(this.workspace, parsed.data.rubric),
     );
+    const { report, failure } = result;
 
     if (!failure) {
       return {
@@ -80,6 +84,7 @@ export class AuditController {
         summary: report.summary,
         toolCalls: report.toolCalls,
         findings: report.findings,
+        usage,
       };
     }
 
@@ -89,6 +94,7 @@ export class AuditController {
       ...correlationFields(),
       code: failure.code,
       findings: report.findings.length,
+      totalTokens: usage.totalTokens,
     });
 
     // Findings already recorded are real work. A run that produced some is returned as
@@ -100,6 +106,7 @@ export class AuditController {
         summary: report.summary,
         toolCalls: report.toolCalls,
         findings: report.findings,
+        usage,
       };
     }
 

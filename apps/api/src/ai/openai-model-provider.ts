@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { providerExecution } from './openai-observability';
 import { Logger } from '@nestjs/common';
 import { correlationFields } from '../observability/request-context';
+import { recordUsage } from '../observability/usage';
 import { ModelProviderError } from './model-provider.error';
 import { zodTextFormat } from 'openai/helpers/zod';
 import type {
@@ -34,11 +35,14 @@ export class OpenAIModelProvider implements ModelProvider {
           : '[invalid-model]',
     };
     const execution = { ...metadata, attempt: 0 };
+    // Kept out of the AsyncLocalStorage store on purpose: observeOpenAIFetch spreads
+    // that store into every attempt log, where a running token total would mislead.
+    const tally = { inputTokens: 0, outputTokens: 0 };
     let outcome = 'success';
     let code: string | undefined;
     try {
       return await providerExecution.run(execution, () =>
-        this.execute(request),
+        this.execute(request, tally),
       );
     } catch (error) {
       outcome = 'failure';
@@ -50,6 +54,9 @@ export class OpenAIModelProvider implements ModelProvider {
         ...execution,
         durationMs: Math.max(0, performance.now() - started),
         outcome,
+        // Summed across SDK retries: the true cost of this one generation.
+        inputTokens: tally.inputTokens,
+        outputTokens: tally.outputTokens,
         ...(code === undefined ? {} : { code }),
       });
     }
@@ -57,6 +64,7 @@ export class OpenAIModelProvider implements ModelProvider {
 
   private async execute<T>(
     request: StructuredGenerationRequest<T>,
+    tally: { inputTokens: number; outputTokens: number },
   ): Promise<T> {
     let format;
     try {
@@ -75,7 +83,7 @@ export class OpenAIModelProvider implements ModelProvider {
     });
     try {
       return await Promise.race([
-        this.generate(request, format, controller.signal),
+        this.generate(request, format, controller.signal, tally),
         deadline,
       ]);
     } catch (error) {
@@ -111,6 +119,7 @@ export class OpenAIModelProvider implements ModelProvider {
     request: StructuredGenerationRequest<T>,
     format: ReturnType<typeof zodTextFormat>,
     signal: AbortSignal,
+    tally: { inputTokens: number; outputTokens: number },
   ): Promise<T> {
     const response = await this.client.responses.create(
       {
@@ -122,6 +131,13 @@ export class OpenAIModelProvider implements ModelProvider {
       },
       { maxRetries: 2, timeout: 10_000, signal },
     );
+
+    // Counted before any outcome check: a refusal or an unparseable response is billed
+    // exactly like a useful one, and accounting that only counted successes would
+    // under-report what was actually spent.
+    recordUsage(response.usage?.input_tokens, response.usage?.output_tokens);
+    tally.inputTokens += response.usage?.input_tokens ?? 0;
+    tally.outputTokens += response.usage?.output_tokens ?? 0;
 
     if (response.status !== 'completed') {
       throw new ModelProviderError('INVALID_OUTPUT');

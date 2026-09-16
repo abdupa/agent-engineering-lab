@@ -363,6 +363,8 @@ describe('API HTTP integration', () => {
       );
       expect(logs).toHaveBeenCalledWith({
         event: 'provider_execution',
+        inputTokens: expect.any(Number) as unknown,
+        outputTokens: expect.any(Number) as unknown,
         requestId,
         provider: 'openai',
         model: 'test-model',

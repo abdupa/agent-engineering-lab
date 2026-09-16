@@ -48,6 +48,12 @@ const AuditResponseSchema = z.object({
   summary: z.string(),
   toolCalls: z.number(),
   findings: z.array(z.object({ path: z.string(), claim: z.string() }).loose()),
+  usage: z.object({
+    calls: z.number(),
+    inputTokens: z.number(),
+    outputTokens: z.number(),
+    totalTokens: z.number(),
+  }),
 });
 const body = (response: { body: unknown }) =>
   AuditResponseSchema.parse(response.body);
@@ -119,6 +125,10 @@ describe('POST /audit', () => {
       status: 'complete',
       summary: 'Reviewed the readme and one source file.',
       toolCalls: 2,
+      // Zero across the board, and correctly so: token counts are read from the
+      // OpenAI response inside the adapter, and this test replaces the adapter with a
+      // fake. Usage is populated only on real provider calls.
+      usage: { calls: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0 },
       findings: [
         {
           path: 'README.md',

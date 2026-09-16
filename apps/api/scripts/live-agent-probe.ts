@@ -13,6 +13,11 @@ import { ModelProviderError } from '../src/ai/model-provider.error';
 import { AuditService } from '../src/audit/audit.service';
 import { Workspace } from '../src/audit/workspace';
 import { requestContext } from '../src/observability/request-context';
+import {
+  costRatesFromEnv,
+  describeUsage,
+  withUsage,
+} from '../src/observability/usage';
 
 /**
  * Manual entry point only. Never imported by application startup or Jest.
@@ -70,18 +75,26 @@ async function main(): Promise<void> {
   const logger = new Logger('LiveAgentProbe');
   const provider = app.get<ModelProvider>(MODEL_PROVIDER);
   const decisions = new AgentDecisionService(provider);
+  const rates = costRatesFromEnv(process.env);
   let sandbox: string | undefined;
 
   try {
     // ---- Stage 1: does the live API accept the agent decision schema? ----
     const stageOneId = randomUUID();
-    const decision = await requestContext.run({ requestId: stageOneId }, () =>
-      decisions.decide(
-        {
-          goal: 'Reply by finishing immediately with the single word: ready.',
-          observations: [],
-        },
-        [{ name: 'noop', description: 'Does nothing. Do not call this tool.' }],
+    const { result: decision, usage: stageOneUsage } = await withUsage(() =>
+      requestContext.run({ requestId: stageOneId }, () =>
+        decisions.decide(
+          {
+            goal: 'Reply by finishing immediately with the single word: ready.',
+            observations: [],
+          },
+          [
+            {
+              name: 'noop',
+              description: 'Does nothing. Do not call this tool.',
+            },
+          ],
+        ),
       ),
     );
     logger.log({
@@ -91,7 +104,9 @@ async function main(): Promise<void> {
       schema: 'AgentDecisionTransportSchema',
       accepted: true,
       decisionType: decision.type,
+      ...stageOneUsage,
     });
+    console.log(`  stage 1: ${describeUsage(stageOneUsage, rates)}`);
 
     // ---- Stage 2: a two-step audit over a throwaway fixture ----
     sandbox = await mkdtemp(join(tmpdir(), 'agent-probe-'));
@@ -117,13 +132,16 @@ async function main(): Promise<void> {
     });
 
     const stageTwoId = randomUUID();
-    const { report, failure } = await requestContext.run(
-      { requestId: stageTwoId },
-      () =>
+    const {
+      result: { report, failure },
+      usage: stageTwoUsage,
+    } = await withUsage(() =>
+      requestContext.run({ requestId: stageTwoId }, () =>
         audit.audit(
           workspace,
           'Unvalidated handling of untrusted input, and documentation that contradicts the code.',
         ),
+      ),
     );
 
     logger.log({
@@ -135,6 +153,7 @@ async function main(): Promise<void> {
       findings: report.findings.length,
       outcome: failure ? 'incomplete' : 'complete',
       ...(failure ? { code: failure.code } : {}),
+      ...stageTwoUsage,
     });
 
     // The fixture is throwaway and its two files are printed above in source, so the
@@ -158,7 +177,17 @@ async function main(): Promise<void> {
         '  2. Did it read the files, or report without reading?',
         '  3. Did it notice the README contradicts parse.ts?',
         '',
-        'Token cost is not in these logs. Check the OpenAI dashboard.',
+        `Stage 2: ${describeUsage(stageTwoUsage, rates)}`,
+        `Combined: ${describeUsage(
+          {
+            calls: stageOneUsage.calls + stageTwoUsage.calls,
+            inputTokens: stageOneUsage.inputTokens + stageTwoUsage.inputTokens,
+            outputTokens:
+              stageOneUsage.outputTokens + stageTwoUsage.outputTokens,
+            totalTokens: stageOneUsage.totalTokens + stageTwoUsage.totalTokens,
+          },
+          rates,
+        )}`,
         '',
       ].join('\n'),
     );

@@ -62,7 +62,8 @@ curl -X POST http://127.0.0.1:3000/audit \
 ```
 
 Runs the agent over the directory named by `AUDIT_ROOT` and returns findings, each with
-a file, an optional line, a severity, a claim and the evidence it relied on.
+a file, an optional line, a severity, a claim and the evidence it relied on, plus a
+`usage` block recording what the run spent.
 
 **The request carries no path.** What may be read is configuration, not input, so the
 transport offers nothing to point somewhere else. Inside that root, `.env*`, `*.key`,
@@ -97,9 +98,18 @@ pnpm probe:agent    # the agent decision schema, then a two-step audit
 At most three billable requests. Both scripts need `OPENAI_API_KEY`, `OPENAI_MODEL` and
 `AUDIT_ROOT` set, because both boot the full application context.
 
-**Token cost is not in the logs.** Duration, outcome and correlation are recorded; spend is
-not instrumented. Check the provider dashboard. That gap is a requirement for the
-evaluation release, not a defect to patch now.
+### Tokens and cost
+
+Every provider generation logs `inputTokens` and `outputTokens` on its `provider_execution`
+event, summed across SDK retries, and `POST /audit` returns a `usage` block for the run.
+
+**Cost is reported only if you supply rates.** Set `OPENAI_INPUT_COST_PER_MTOK` and
+`OPENAI_OUTPUT_COST_PER_MTOK` (price per million tokens) and optionally
+`OPENAI_COST_CURRENCY`. Unset, you get tokens and an explicit "cost unavailable" — a
+pricing table hardcoded here would go stale silently and report a confident wrong number.
+
+Token counts are read from the provider response inside the OpenAI adapter, so any fake
+provider reports zero. In tests, `usage` is zero everywhere, and correctly so.
 
 ## Skills
 

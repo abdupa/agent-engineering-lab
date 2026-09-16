@@ -4,7 +4,7 @@ Project: Agent Engineering Lab
 
 Release: v0.6 — First agent: read-only codebase auditor
 
-Current task: V0.6-003 — `POST /audit` HTTP slice
+Current task: V0.6-003a — Token and cost instrumentation
 
 Status: Completed
 
@@ -110,9 +110,15 @@ repository the files are small enough that it should not matter; on a large code
 a wall. The probe is capped at two iterations partly to keep that bounded, and what a real
 run does with the tools is the evidence that would earn a memory or planning release.
 
-Separately, **spend is not instrumented.** Duration, outcome and correlation are logged;
-tokens and cost are not. After a live run you will know what the agent did but not what it
-cost, except from the provider dashboard.
+**Spend is now instrumented** (added before running anything, so the first live run
+reports its own cost rather than sending you to a dashboard). Every generation logs
+`inputTokens` and `outputTokens` on `provider_execution`, summed across SDK retries;
+`POST /audit` returns a `usage` block; and the probe prints per-stage and combined totals.
+
+Cost is reported **only when rates are supplied** via `OPENAI_INPUT_COST_PER_MTOK` and
+`OPENAI_OUTPUT_COST_PER_MTOK`. Hardcoding a pricing table would go stale silently and
+report a confident wrong number, which is the failure mode this repository exists to
+avoid. Unset, the output says "cost unavailable" rather than printing a zero.
 
 ## Limitations
 
