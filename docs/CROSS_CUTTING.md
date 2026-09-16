@@ -13,7 +13,14 @@ so that does not happen again.
 > A pattern with no failure policy is not finished. A pattern you cannot observe is not
 > operable.
 
-This is checked by `/pattern` when building and `/release` when closing.
+Three layers hold this up, weakest to strongest:
+
+1. `/pattern` and `/release` prompt for it — useful, but only when invoked.
+2. [The SPEC template](releases/_template/SPEC.md) ships the headings pre-written.
+3. **`apps/api/test/governance/` fails `pnpm verify`** if an active SPEC is missing any
+   of them. That one works with nobody reading anything.
+
+The first two are reminders. The third is the guarantee.
 
 ## Why a release will not do
 

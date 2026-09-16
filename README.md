@@ -69,6 +69,13 @@ prove known scenarios, not production behaviour.
 
 That rule is the most valuable thing in this repository. It is checked, not assumed.
 
+## Governance is tested
+
+`apps/api/test/governance/` asserts that every active release SPEC carries its earning
+requirement, reliability policy, observability section and honest limits — and that the
+governance documents' links resolve. It runs inside `pnpm test`, so a drifting session
+breaks the build rather than quietly skipping a rule.
+
 ## Reference
 
 [docs/reference/v0.5-study-guide.md](docs/reference/v0.5-study-guide.md) — the previous

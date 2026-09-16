@@ -42,6 +42,19 @@ A planned task is not authorization to start it.
 
 ## Verification
 
-Carried-forward test suite re-run in this repository: **468 passed, 25 suites**.
-Typecheck clean. Full `pnpm verify` not run locally — pnpm is not installed on this
-machine; see `/verify` for the direct commands.
+**493 passed, 26 suites.** Typecheck clean. 468 carried forward, plus 25 new governance
+tests. Full `pnpm verify` not run locally — pnpm is not installed on this machine; see
+`/verify` for the direct commands.
+
+The governance suite was verified in both directions: it passes on the current tree, and
+a deliberately incomplete probe SPEC made it fail with the four expected errors before
+the probe was removed.
+
+## Inherited v0.6 draft
+
+The predecessor's v0.6 memory SPEC is at
+[reference/v0.6-memory-draft.md](reference/v0.6-memory-draft.md). The governance test
+rejected it as an active SPEC — it has no earning requirement, no reliability policy and
+no observability section, because it was written before those rules existed. Its taxonomy
+and policy sequencing are sound and should be reused when the real SPEC is written from
+[the template](releases/_template/SPEC.md).

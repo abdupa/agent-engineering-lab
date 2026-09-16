@@ -70,6 +70,11 @@ SPEC answers, and the new surface each planned pattern introduces.
 These are obligations carried by every release, not a release of their own. Nothing on
 the roadmap is allowed to become "the observability release".
 
+**This is enforced, not trusted.** `apps/api/test/governance/` fails the build if any
+active release SPEC is missing its earning requirement, reliability policy, observability
+section or limits — so it fails whether or not this file was ever read. Start from
+[the template](docs/releases/_template/SPEC.md).
+
 ## Decision authority
 
 Classify missing decisions by consequence, using [docs/DECISION_POLICY.md](docs/DECISION_POLICY.md).
