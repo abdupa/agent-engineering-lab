@@ -23,7 +23,7 @@ The last one is the differentiator. The first three are increasingly common.
 
 ## The thesis
 
-Imran Ahmad's *30 Agents Every AI Engineer Must Build* lists thirty agent types. Most
+Imran Ahmad's _30 Agents Every AI Engineer Must Build_ lists thirty agent types. Most
 of them are **the same small set of architectures wearing different domain knowledge.**
 
 A legal intelligence agent is document intelligence + retrieval + verification.
@@ -40,14 +40,14 @@ and why [docs/PATTERNS.md](PATTERNS.md) records a decision for every one of the 
 
 ### For client engagement
 
-| What you can do | Because |
-| --- | --- |
-| Answer "can you build us X?" with an architecture, not a guess | X decomposes into patterns you have built and measured |
-| Quote scope credibly | You know which parts are two days and which are two weeks, from having done them |
-| Produce architecture rationale on demand | Every ADR here is a client-ready justification document in miniature |
-| Win trust in a room full of overclaiming | You arrive with measured limits, not a demo |
-| Say no with evidence | "Multi-agent will not help here, and here is the measurement that shows it" |
-| Hand over something maintainable | Contracts, tests, and recorded decisions, not a notebook |
+| What you can do                                                | Because                                                                          |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Answer "can you build us X?" with an architecture, not a guess | X decomposes into patterns you have built and measured                           |
+| Quote scope credibly                                           | You know which parts are two days and which are two weeks, from having done them |
+| Produce architecture rationale on demand                       | Every ADR here is a client-ready justification document in miniature             |
+| Win trust in a room full of overclaiming                       | You arrive with measured limits, not a demo                                      |
+| Say no with evidence                                           | "Multi-agent will not help here, and here is the measurement that shows it"      |
+| Hand over something maintainable                               | Contracts, tests, and recorded decisions, not a notebook                         |
 
 ### For capability
 

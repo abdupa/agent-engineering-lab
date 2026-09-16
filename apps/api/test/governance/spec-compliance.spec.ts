@@ -14,10 +14,16 @@ const releases = join(docs, 'releases');
 const ARCHIVED = new Set(['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5']);
 
 const REQUIRED_SPEC_SECTIONS = [
-  { name: 'earning requirement', pattern: /##\s*The product requirement that earns this release/i },
+  {
+    name: 'earning requirement',
+    pattern: /##\s*The product requirement that earns this release/i,
+  },
   { name: 'reliability policy', pattern: /##\s*Reliability policy/i },
   { name: 'observability', pattern: /##\s*Observability/i },
-  { name: 'what this will not prove', pattern: /##\s*What this will not prove/i },
+  {
+    name: 'what this will not prove',
+    pattern: /##\s*What this will not prove/i,
+  },
 ];
 
 function releaseDirs(): string[] {
@@ -89,7 +95,8 @@ describe('governance: every active release SPEC is complete', () => {
         'states its %s',
         (name, pattern) => {
           const path = specPath(release);
-          if (!existsSync(path)) throw new Error(`${release}/SPEC.md is missing`);
+          if (!existsSync(path))
+            throw new Error(`${release}/SPEC.md is missing`);
           const body = readFileSync(path, 'utf8');
           if (!pattern.test(body)) {
             throw new Error(
@@ -103,9 +110,10 @@ describe('governance: every active release SPEC is complete', () => {
 
       it('fills in the earning requirement rather than leaving the placeholder', () => {
         const body = readFileSync(specPath(release), 'utf8');
-        const section = /##\s*The product requirement that earns this release\s*([\s\S]*?)(?=\n##\s|$)/i.exec(
-          body,
-        );
+        const section =
+          /##\s*The product requirement that earns this release\s*([\s\S]*?)(?=\n##\s|$)/i.exec(
+            body,
+          );
         expect(section).not.toBeNull();
         const text = (section?.[1] ?? '').trim();
         // A template placeholder is angle-bracketed; real prose is not.
@@ -155,7 +163,9 @@ describe('governance: links in the governance documents resolve', () => {
         if (!existsSync(resolve(dir, target))) broken.push(target);
       }
       if (broken.length) {
-        throw new Error(`${label} links to missing files: ${broken.join(', ')}`);
+        throw new Error(
+          `${label} links to missing files: ${broken.join(', ')}`,
+        );
       }
       expect(broken).toEqual([]);
     },

@@ -14,13 +14,13 @@ and `study-guide/STUDY_GUIDE.md` (kept as [reference](../reference/v0.5-study-gu
 Those links are left broken deliberately. Repointing them would change a record of what
 was true at the time it was written.
 
-| Release | Delivered | Tests at close |
-| --- | --- | --- |
+| Release                 | Delivered               | Tests at close |
+| ----------------------- | ----------------------- | -------------- |
 | [v0.1](v0.1/RELEASE.md) | Reliable LLM foundation | 124 / 6 suites |
-| [v0.2](v0.2/RELEASE.md) | Controlled tool system | 178 / 10 |
-| [v0.3](v0.3/RELEASE.md) | Custom agent loop | 274 / 15 |
-| [v0.4](v0.4/RELEASE.md) | Stateful orchestration | 370 / 20 |
-| [v0.5](v0.5/RELEASE.md) | Retrieval engineering | 468 / 25 |
+| [v0.2](v0.2/RELEASE.md) | Controlled tool system  | 178 / 10       |
+| [v0.3](v0.3/RELEASE.md) | Custom agent loop       | 274 / 15       |
+| [v0.4](v0.4/RELEASE.md) | Stateful orchestration  | 370 / 20       |
+| [v0.5](v0.5/RELEASE.md) | Retrieval engineering   | 468 / 25       |
 
 ## Current — v0.6 onward
 

@@ -42,7 +42,7 @@ This is the rule that matters most here, and it is not negotiable.
 
 **Never describe planned capability as implemented. Never claim evidence you do not have.**
 
-Every release document states what its tests prove *and what they do not*. A passing
+Every release document states what its tests prove _and what they do not_. A passing
 suite proves mechanics, not quality. A citation proves reference, not support. A
 deterministic fixture proves a known scenario, not production behaviour.
 

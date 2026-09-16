@@ -58,9 +58,9 @@ could be tricked into doing.>
 
 ## Milestones
 
-| Task | Objective and required outcome | Evidence / exit criteria |
-| --- | --- | --- |
-| VX.Y-001 | | |
+| Task     | Objective and required outcome | Evidence / exit criteria |
+| -------- | ------------------------------ | ------------------------ |
+| VX.Y-001 |                                |                          |
 
 ## Evaluation
 

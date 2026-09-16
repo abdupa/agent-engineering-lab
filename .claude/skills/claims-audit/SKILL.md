@@ -29,7 +29,7 @@ For each claim in the documents changed by this release:
 
 ## Every release document needs a limits section
 
-If a SPEC, REVIEW or RELEASE has no honest statement of what its evidence does *not*
+If a SPEC, REVIEW or RELEASE has no honest statement of what its evidence does _not_
 prove, it is not finished. That section is not a disclaimer; it is the most useful part
 of the document.
 

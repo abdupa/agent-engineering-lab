@@ -40,7 +40,7 @@ faster afterwards.
    provider, no integration yet.
 2. **The simplest implementation that demonstrates the architecture.** Deterministic if
    possible. A baseline you can explain beats a sophisticated one you cannot.
-3. **The boundary it must not cross.** State what this pattern is *not* allowed to do,
+3. **The boundary it must not cross.** State what this pattern is _not_ allowed to do,
    and test that it does not.
 4. **Reliability policy.** Failure modes — invalid input, timeout, cancellation, empty
    result, partial result, dependency unavailable. Which are retryable and under what
@@ -49,7 +49,7 @@ faster afterwards.
 5. **Observability.** What it emits on success, on failure, and at boundaries. What must
    **never** be emitted — payloads, prompts, credentials, memory contents, permission
    grants, raw provider errors. How correlation flows through it. Then the acceptance
-   test: *given only the logs, can an operator say which boundary failed?* If not, the
+   test: _given only the logs, can an operator say which boundary failed?_ If not, the
    pattern is not done.
 6. **Evaluation.** Labeled fixtures with exact expected outcomes where policy defines
    them. What would a regression look like?
