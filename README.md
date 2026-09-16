@@ -83,8 +83,13 @@ Nothing below runs during tests, startup or CI. Each makes real, billable reques
 
 ```sh
 pnpm smoke:openai   # research schema against the live provider
-pnpm probe:agent    # the agent decision schema, then a two-step audit
+pnpm probe:agent    # the agent decision schema, then a short audit of a fixture
+pnpm audit:live     # audit the real AUDIT_ROOT and save the run as evidence
 ```
+
+`audit:live` writes each run to `docs/releases/v0.6/runs/` so results become evidence
+rather than terminal scrollback. Step budget via `AUDIT_MAX_ITERATIONS` (default 12),
+focus via `AUDIT_RUBRIC`.
 
 `probe:agent` runs two stages, cheapest risk first:
 
