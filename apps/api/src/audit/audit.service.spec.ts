@@ -196,6 +196,9 @@ describe('a run that ends badly', () => {
     expect(failure).toBeInstanceOf(AgentRunError);
     expect(failure?.code).toBe('LOOP_LIMIT');
     expect(report.findings).toHaveLength(2);
+    // Three tools were invoked before the limit; the count must reflect that rather
+    // than the number of findings, which a live probe caught it doing.
+    expect(report.toolCalls).toBe(3);
     expect(report.summary).toContain('did not complete');
     expect(report.summary).toContain('LOOP_LIMIT');
     expect(report.summary).toContain('2 finding(s)');
@@ -216,6 +219,20 @@ describe('a run that ends badly', () => {
 
     expect(failure?.code).toBe('DECISION_FAILED');
     expect(report.findings).toHaveLength(1);
+    expect(report.toolCalls).toBe(1);
+  });
+
+  it('counts tool calls that produced no finding at all', async () => {
+    const { audit } = service(
+      [call('list-files', {}), call('read-file', { path: 'README.md' })],
+      2, // exactly the shape the first live probe hit
+    );
+
+    const { report, failure } = await audit.audit(workspace);
+
+    expect(failure?.code).toBe('LOOP_LIMIT');
+    expect(report.findings).toEqual([]);
+    expect(report.toolCalls).toBe(2);
   });
 });
 

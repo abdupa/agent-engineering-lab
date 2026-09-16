@@ -23,15 +23,26 @@ import {
  * Manual entry point only. Never imported by application startup or Jest.
  *
  * Two stages, cheapest risk first. Stage one asks whether the live Structured Outputs
- * API accepts AgentDecisionTransportSchema at all — that has never been verified against
- * a real provider, only against an offline conversion test. Stage two runs a two-step
- * audit against a throwaway fixture.
+ * API accepts AgentDecisionTransportSchema at all. Stage two runs a short audit against
+ * a throwaway fixture.
  *
- * At most three billable requests. Stage two never touches AUDIT_ROOT: it builds its own
- * temporary directory so a probe cannot wander into a real codebase.
+ * At most 1 + MAX_ITERATIONS billable requests. Measured on the first live run: roughly
+ * 500-600 input tokens per step at this size, a few seconds each. Stage two never
+ * touches AUDIT_ROOT — it builds its own temporary directory, so a probe cannot wander
+ * into a real codebase.
  */
 
-const MAX_ITERATIONS = 2;
+/**
+ * A useful audit needs at minimum list -> read -> report -> finish, so a cap of two
+ * could never produce a finding. The first probe run proved that the hard way: the
+ * agent investigated correctly and hit the limit before it could report anything.
+ *
+ * Override with PROBE_MAX_ITERATIONS to trade spend against completeness.
+ */
+const MAX_ITERATIONS = (() => {
+  const raw = Number(process.env.PROBE_MAX_ITERATIONS ?? '8');
+  return Number.isInteger(raw) && raw >= 1 && raw <= 20 ? raw : 8;
+})();
 
 function fail(reason: string, code = 'CONFIGURATION'): void {
   console.error(JSON.stringify({ event: 'agent_probe_blocked', code, reason }));
@@ -176,6 +187,8 @@ async function main(): Promise<void> {
         '  1. Does each cited line actually say what "evidence" claims?',
         '  2. Did it read the files, or report without reading?',
         '  3. Did it notice the README contradicts parse.ts?',
+        '',
+        `Steps allowed: ${MAX_ITERATIONS}. Raise with PROBE_MAX_ITERATIONS if it ran out.`,
         '',
         `Stage 2: ${describeUsage(stageTwoUsage, rates)}`,
         `Combined: ${describeUsage(

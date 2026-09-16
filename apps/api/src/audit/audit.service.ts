@@ -89,14 +89,29 @@ export class AuditService {
     registry.register(createGrepTool(workspace));
     registry.register(createReportFindingTool(workspace, collector));
 
-    const runner = new AgentRunner(
-      this.decisions,
-      new ToolExecutor(registry, this.options.toolTimeoutMs ?? 5_000),
-      {
-        maxIterations: this.options.maxIterations ?? 20,
-        timeoutMs: this.options.timeoutMs ?? 120_000,
-      },
+    const executor = new ToolExecutor(
+      registry,
+      this.options.toolTimeoutMs ?? 5_000,
     );
+    // Counted here rather than inferred later. A failed run throws before returning
+    // state, so the observation count is unavailable on that path — and guessing it
+    // from the finding count reports a number that is simply not the one asked for.
+    let toolCalls = 0;
+    const counted = {
+      execute: (
+        name: string,
+        input: unknown,
+        permissions?: { readonly grantedPermissions: readonly string[] },
+      ) => {
+        toolCalls += 1;
+        return executor.execute(name, input, permissions);
+      },
+    };
+
+    const runner = new AgentRunner(this.decisions, counted, {
+      maxIterations: this.options.maxIterations ?? 20,
+      timeoutMs: this.options.timeoutMs ?? 120_000,
+    });
 
     try {
       const run = await runner.run(
@@ -111,9 +126,9 @@ export class AuditService {
         report: AuditReportSchema.parse({
           findings: collector.all(),
           summary: run.result,
-          // One observation is one completed tool call. No iteration count is reported
-          // because the runner does not return one, and inventing it would be a lie.
-          toolCalls: run.state.observations.length,
+          // No iteration count is reported: the runner does not return one, and
+          // inventing it would be a lie.
+          toolCalls,
         }),
       };
     } catch (error) {
@@ -124,7 +139,7 @@ export class AuditService {
           findings,
           // Stated plainly so a caller cannot mistake a partial audit for a complete one.
           summary: `Audit did not complete (${error.code}). ${findings.length} finding(s) recorded before the failure.`,
-          toolCalls: findings.length,
+          toolCalls,
         }),
         failure: error,
       };
