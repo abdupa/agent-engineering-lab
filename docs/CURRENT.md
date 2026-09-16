@@ -4,9 +4,9 @@ Project: Agent Engineering Lab
 
 Release: v0.6 — First agent: read-only codebase auditor
 
-Current task: V0.6-003a — Token and cost instrumentation
+Current task: V0.6-004 — Live run against a fixture, recorded
 
-Status: Completed
+Status: Partially completed — fixture run done, real-codebase run outstanding
 
 ## Delivered
 
