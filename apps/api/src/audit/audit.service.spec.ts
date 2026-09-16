@@ -327,4 +327,14 @@ describe('the rubric', () => {
     expect(state.goal).toContain('Only check for hardcoded credentials.');
     expect(state.goal).toContain('report-finding');
   });
+
+  it('tells the agent to report incrementally rather than at the end', async () => {
+    // A live run spent nine of twelve steps reading and reported nothing before it
+    // failed. The instruction to report as it goes is the response to that.
+    const { audit, seen } = service([finish('Done.')]);
+    await audit.audit(workspace);
+    const state = seen[0] as { goal: string };
+    expect(state.goal).toContain('Report as you go');
+    expect(state.goal).toContain('before moving on');
+  });
 });

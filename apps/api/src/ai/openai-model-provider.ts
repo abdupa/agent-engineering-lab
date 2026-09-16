@@ -140,7 +140,14 @@ export class OpenAIModelProvider implements ModelProvider {
     tally.outputTokens += response.usage?.output_tokens ?? 0;
 
     if (response.status !== 'completed') {
-      throw new ModelProviderError('INVALID_OUTPUT');
+      // A truncated response and a malformed one both surfaced as a bare
+      // INVALID_OUTPUT, which told an operator nothing about which had happened or
+      // whether a larger budget would help. The code stays the same; the reason is now
+      // recorded. Status and incomplete reason are provider metadata, not payload.
+      throw this.invalidOutput('not_completed', {
+        status: response.status,
+        incompleteReason: response.incomplete_details?.reason,
+      });
     }
 
     const refused = response.output.some(
@@ -150,13 +157,38 @@ export class OpenAIModelProvider implements ModelProvider {
     );
     if (refused) throw new ModelProviderError('REFUSED');
     if (!response.output_text?.trim())
-      throw new ModelProviderError('INVALID_OUTPUT');
+      throw this.invalidOutput('empty_output_text');
 
+    let data: unknown;
     try {
-      const data: unknown = JSON.parse(response.output_text);
+      data = JSON.parse(response.output_text);
+    } catch {
+      throw this.invalidOutput('unparseable_json');
+    }
+    try {
       return request.schema.parse(data);
     } catch {
-      throw new ModelProviderError('INVALID_OUTPUT');
+      // The value itself is never logged: it is model output and may carry anything.
+      throw this.invalidOutput('schema_rejected');
     }
+  }
+
+  /** Records why output was rejected, then raises the unchanged provider-neutral error. */
+  private invalidOutput(
+    reason: string,
+    detail: Record<string, unknown> = {},
+  ): ModelProviderError {
+    try {
+      this.logger.warn({
+        event: 'provider_invalid_output',
+        ...correlationFields(),
+        provider: 'openai',
+        reason,
+        ...detail,
+      });
+    } catch {
+      // Diagnostics must not replace the failure they describe.
+    }
+    return new ModelProviderError('INVALID_OUTPUT');
   }
 }

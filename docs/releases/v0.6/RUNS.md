@@ -4,6 +4,78 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 3 — first audit of real code. Failed, informatively.
+
+Date: 2026-09-16 · `gpt-5.6-luna` · `AUDIT_ROOT=apps/api/src/audit` (13 files) · cap 12
+
+**Outcome: `DECISION_FAILED` after 10 iterations and 9 tool calls. Zero findings.**
+
+```
+list-files → read × 8 → INVALID_OUTPUT
+```
+
+### Three separate problems, none of which the fixture run could have shown
+
+**1. It read everything and reported nothing.** Nine of twelve steps went to reading. It
+never called `report-finding` once. The goal said "investigate before concluding", which
+on a 13-file directory it read as "read all thirteen first". With a step budget, that
+strategy cannot produce a finding.
+
+Fixed: the goal now says to report each defect before moving on, and states plainly that
+an audit reporting two real defects and stopping early beats one that runs out having
+reported nothing.
+
+**2. `INVALID_OUTPUT` said nothing useful.** The tenth decision was rejected and the log
+gave one word. Truncation, unparseable text and a schema mismatch are different failures
+needing different responses, and all three surfaced identically.
+
+Fixed: the provider now records _why_ — `not_completed` with the provider's own
+`incomplete_details.reason`, `unparseable_json`, `schema_rejected`, or
+`empty_output_text`. The error code is unchanged, so the HTTP contract is untouched; only
+the log grew. The rejected value is never logged.
+
+The most likely cause, unconfirmed: output was truncated. Output tokens on the failing
+call were 263 against 60-110 on every successful one. The next failure will say so
+outright instead of leaving it to inference.
+
+**3. Context growth is now a measured wall, not a prediction.**
+
+| Step | Input tokens | Delta  |
+| ---- | ------------ | ------ |
+| 1    | 521          | —      |
+| 2    | 612          | +91    |
+| 3    | 1,655        | +1,043 |
+| 4    | 3,119        | +1,464 |
+| 5    | 4,291        | +1,172 |
+| 6    | 5,158        | +867   |
+| 7    | 5,753        | +595   |
+| 8    | 6,301        | +548   |
+| 9    | 6,842        | +541   |
+| 10   | 7,425        | +583   |
+
+**41,677 input tokens to produce nothing**, against 4,114 for the two-file fixture. State
+is resent every step, so cost grows with the square of the step count. Thirteen small
+files nearly exhausted a twelve-step budget on reading alone.
+
+This is the requirement that earns memory and planning. Not a roadmap entry any more — a
+number.
+
+### What this does not establish
+
+Nothing about audit quality: it produced no findings to judge. It establishes that the
+prompt strategy and the step budget were wrong together, and that the failure diagnostics
+were too coarse to explain why. All three are now different; none is verified by a further
+live run yet.
+
+### Measurements
+
+42,829 tokens total. 33.2 seconds for ten steps, ~3.3s each — an audit that must not hold
+an HTTP request open.
+
+Record: `docs/releases/v0.6/runs/2026-09-16T06-52-14-655Z.json`
+
+---
+
 ## Run 2 — probe against the throwaway fixture
 
 Date: 2026-09-16 · `gpt-5.6-luna` · `PROBE_MAX_ITERATIONS=8`
