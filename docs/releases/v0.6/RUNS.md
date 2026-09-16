@@ -4,6 +4,69 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 4 — the prompt fix worked, and exposed the real bug
+
+Date: 2026-09-16 · `gpt-5.6-luna` · same target · cap 12
+
+**Outcome: `DECISION_FAILED` at step 3. Zero findings. But a much better failure.**
+
+```
+list-files → read-file → [attempt to report] → unparseable_json
+```
+
+### The prompt fix did what it was meant to
+
+Run 3 read eight files before failing. This run read **one**, then went straight for a
+report. The instruction to report before moving on changed the strategy exactly as
+intended — and in doing so moved the failure from step 10 to step 3, onto the reporting
+path, where the actual defect lives.
+
+Input tokens fell from 41,677 to 3,487 for the same target.
+
+### The new diagnostic disproved the standing hypothesis
+
+The previous record guessed truncation, on the grounds that failing calls had unusually
+high output-token counts. The diagnostic added in response says otherwise:
+
+```
+provider_invalid_output  reason: unparseable_json
+```
+
+Not `not_completed`. The response was complete and the envelope itself would not parse.
+One run of a cheap diagnostic replaced a plausible guess with a fact, and the guess was
+wrong.
+
+### Current hypothesis, and why it is only that
+
+Both failures so far carry high output-token counts (220 and 263) against 56-110 on every
+successful step, and both occur where the agent is constructing a finding.
+
+`AgentDecisionTransportSchema` carries tool arguments as `argumentsJson: string` — JSON
+encoded inside a JSON string, the v0.3-002 workaround for Structured Outputs not accepting
+arbitrary objects. A finding's `evidence` field holds source code: quotes, braces,
+newlines. Every one of those has to be escaped correctly inside that string, and an
+under-escaped quote makes the **outer** envelope unparseable, which is exactly the
+observed failure.
+
+**This remains a hypothesis.** The rejected text is not logged, so nothing here has seen
+it. Run 5 will decide it: the diagnostic now also records `endsWithBrace`,
+`outputTextLength`, `quoteCount` and `backslashCount`. Output that ends in a closing brace
+and still will not parse is an escaping fault; output that does not is truncation wearing
+a `completed` status. A capped 400-character sample is available behind
+`PROVIDER_DEBUG_INVALID_OUTPUT=1`, off by default because model output can contain
+anything.
+
+If the hypothesis holds, the fix is architectural rather than a prompt tweak, and it lands
+on a contract in place since v0.3.
+
+### Measurements
+
+3,823 tokens. 9.6 seconds for three steps.
+
+Record: `docs/releases/v0.6/runs/2026-09-16T07-11-23-100Z.json`
+
+---
+
 ## Run 3 — first audit of real code. Failed, informatively.
 
 Date: 2026-09-16 · `gpt-5.6-luna` · `AUDIT_ROOT=apps/api/src/audit` (13 files) · cap 12

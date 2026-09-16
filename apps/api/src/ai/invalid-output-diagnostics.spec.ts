@@ -139,3 +139,90 @@ describe('why output was rejected', () => {
     });
   });
 });
+
+describe('unparseable output shape', () => {
+  let fetchMock: jest.MockedFunction<typeof fetch>;
+  let warnings: jest.SpyInstance;
+  let provider: ModelProvider;
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    warnings = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    fetchMock = jest.fn();
+    provider = new OpenAIModelProvider(
+      new OpenAI({
+        apiKey: 'test-only-key',
+        fetch: observeOpenAIFetch(fetchMock),
+        logLevel: 'off',
+      }),
+      'configured-model',
+    );
+  });
+
+  afterEach(() => {
+    delete process.env.PROVIDER_DEBUG_INVALID_OUTPUT;
+    jest.restoreAllMocks();
+  });
+
+  function entry(): Record<string, unknown> | undefined {
+    return warnings.mock.calls
+      .map(([value]) => value as Record<string, unknown>)
+      .find((value) => value?.event === 'provider_invalid_output');
+  }
+
+  function respondText(text: string) {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'resp_test',
+          object: 'response',
+          status: 'completed',
+          output: [message(text)],
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+  }
+
+  it('separates output cut off mid-value from output that merely will not parse', async () => {
+    respondText('{"summary":"half a resp');
+    await expect(
+      provider.generateStructured(generationRequest),
+    ).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+    expect(entry()).toMatchObject({
+      reason: 'unparseable_json',
+      endsWithBrace: false,
+    });
+
+    warnings.mockClear();
+    // Complete-looking but badly escaped: a raw quote inside a string value.
+    respondText('{"summary":"he said "hi" to me","tags":[]}');
+    await expect(
+      provider.generateStructured(generationRequest),
+    ).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+    expect(entry()).toMatchObject({
+      reason: 'unparseable_json',
+      endsWithBrace: true,
+    });
+  });
+
+  it('withholds the text itself unless debugging is explicitly enabled', async () => {
+    respondText('{"summary":"secret-value-here');
+    await expect(
+      provider.generateStructured(generationRequest),
+    ).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+    expect(JSON.stringify(entry())).not.toContain('secret-value-here');
+    expect(entry()).not.toHaveProperty('sample');
+  });
+
+  it('includes a capped sample when an operator opts in', async () => {
+    process.env.PROVIDER_DEBUG_INVALID_OUTPUT = '1';
+    respondText(`{"summary":"${'x'.repeat(900)}`);
+    await expect(
+      provider.generateStructured(generationRequest),
+    ).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+    expect(String(entry()?.sample)).toHaveLength(400);
+  });
+});

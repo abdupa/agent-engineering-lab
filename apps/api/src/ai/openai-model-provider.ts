@@ -163,7 +163,21 @@ export class OpenAIModelProvider implements ModelProvider {
     try {
       data = JSON.parse(response.output_text);
     } catch {
-      throw this.invalidOutput('unparseable_json');
+      // Shape metrics, not content. Whether the text ends in a closing brace separates
+      // "cut off mid-value" from "complete but badly escaped", which need different
+      // fixes and were previously indistinguishable.
+      const text = response.output_text;
+      throw this.invalidOutput('unparseable_json', {
+        outputTextLength: text.length,
+        endsWithBrace: text.trimEnd().endsWith('}'),
+        quoteCount: (text.match(/"/g) ?? []).length,
+        backslashCount: (text.match(/\\/g) ?? []).length,
+        // Opt-in only. Model output can contain anything, so this stays off unless an
+        // operator deliberately turns it on for a local debugging session.
+        ...(process.env.PROVIDER_DEBUG_INVALID_OUTPUT === '1'
+          ? { sample: text.slice(0, 400) }
+          : {}),
+      });
     }
     try {
       return request.schema.parse(data);
