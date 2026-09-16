@@ -53,6 +53,29 @@ Node 22.13+ on the 22.x line, or 24.x. pnpm 10.30.3.
 If pnpm is unavailable, `apps/api/node_modules/.bin/jest --runInBand` runs the suite and
 `apps/api/node_modules/.bin/tsc --noEmit` typechecks.
 
+## Audit endpoint
+
+```sh
+curl -X POST http://127.0.0.1:3000/audit \
+  -H 'Content-Type: application/json' \
+  -d '{"rubric":"Unsafe handling of untrusted input"}'
+```
+
+Runs the agent over the directory named by `AUDIT_ROOT` and returns findings, each with
+a file, an optional line, a severity, a claim and the evidence it relied on.
+
+**The request carries no path.** What may be read is configuration, not input, so the
+transport offers nothing to point somewhere else. Inside that root, `.env*`, `*.key`,
+`*.pem`, `.git/` and `node_modules/` are refused, absolute paths and `..` are rejected,
+and symlinks are resolved and re-checked.
+
+A run that fails after recording findings returns HTTP 200 with
+`status: "incomplete"` and the reason — partial work is real work. A run that fails
+having recorded nothing maps to 502, 503, 504 or 500 by cause, except a step-limit
+exhaustion, which is an ordinary incomplete result rather than a server error.
+
+This request makes real OpenAI calls, one per agent step.
+
 ## Skills
 
 Four Claude Code skills encode the disciplines that matter, so they run instead of being

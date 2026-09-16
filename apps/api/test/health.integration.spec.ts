@@ -1,6 +1,10 @@
 import { INestApplication, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { mkdtemp, rm } from 'node:fs/promises';
 import type { Server } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Workspace } from '../src/audit/workspace';
 import request from 'supertest';
 import OpenAI from 'openai';
 import { OpenAIModelProvider } from '../src/ai/openai-model-provider';
@@ -10,6 +14,7 @@ import { requestContext } from '../src/observability/request-context';
 import { ModelProviderError } from '../src/ai/model-provider.error';
 import type { ModelProviderErrorCode } from '../src/ai/model-provider.error';
 import { AppModule } from '../src/app.module';
+import { AUDIT_WORKSPACE } from '../src/audit/audit.tokens';
 import { MODEL_PROVIDER } from '../src/ai/model-provider';
 import type {
   ModelProvider,
@@ -52,14 +57,19 @@ class FakeModelProvider implements ModelProvider {
 
 describe('API HTTP integration', () => {
   let app: INestApplication<Server>;
+  let auditSandbox: string;
   let logWarning: jest.SpyInstance;
   let logs: jest.SpyInstance;
   const provider = new FakeModelProvider();
 
   beforeAll(async () => {
+    auditSandbox = await mkdtemp(join(tmpdir(), 'health-audit-root-'));
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(MODEL_PROVIDER)
       .useValue(provider)
+      // AppModule now mounts AuditModule, whose workspace is resolved at startup.
+      .overrideProvider(AUDIT_WORKSPACE)
+      .useValue(await Workspace.create(auditSandbox))
       .compile();
     app = module.createNestApplication<INestApplication<Server>>();
     app.use(httpObservability);
@@ -83,6 +93,7 @@ describe('API HTTP integration', () => {
 
   afterAll(async () => {
     await app?.close();
+    if (auditSandbox) await rm(auditSandbox, { recursive: true, force: true });
   });
 
   it('GET /health returns the health contract without calling the provider', async () => {

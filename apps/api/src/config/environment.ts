@@ -21,5 +21,17 @@ export function validateEnvironment(env: Record<string, unknown>) {
     throw new Error('HOST must be a non-empty string');
   }
 
+  // Required by AuditModule, which fails startup without it. Shape is checked here so
+  // an obviously wrong value is rejected with a clear message before module wiring.
+  const auditRoot = env.AUDIT_ROOT;
+  if (auditRoot !== undefined) {
+    if (typeof auditRoot !== 'string' || auditRoot.trim().length === 0) {
+      throw new Error('AUDIT_ROOT must be a non-empty absolute path');
+    }
+    if (!auditRoot.trim().startsWith('/')) {
+      throw new Error('AUDIT_ROOT must be a non-empty absolute path');
+    }
+  }
+
   return { ...env, NODE_ENV: nodeEnv, HOST: host, PORT: port };
 }
