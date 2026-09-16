@@ -76,6 +76,31 @@ exhaustion, which is an ordinary incomplete result rather than a server error.
 
 This request makes real OpenAI calls, one per agent step.
 
+## Manual live verification
+
+Nothing below runs during tests, startup or CI. Each makes real, billable requests.
+
+```sh
+pnpm smoke:openai   # research schema against the live provider
+pnpm probe:agent    # the agent decision schema, then a two-step audit
+```
+
+`probe:agent` runs two stages, cheapest risk first:
+
+1. **Schema probe — one request.** Does the live Structured Outputs API accept
+   `AgentDecisionTransportSchema`? That has only ever been checked against an offline
+   conversion test. If this fails, nothing after it matters.
+2. **Two-step audit — at most two requests**, against a temporary fixture the script
+   creates and deletes. It never reads `AUDIT_ROOT`, so a probe cannot wander into a real
+   codebase.
+
+At most three billable requests. Both scripts need `OPENAI_API_KEY`, `OPENAI_MODEL` and
+`AUDIT_ROOT` set, because both boot the full application context.
+
+**Token cost is not in the logs.** Duration, outcome and correlation are recorded; spend is
+not instrumented. Check the provider dashboard. That gap is a requirement for the
+evaluation release, not a defect to patch now.
+
 ## Skills
 
 Four Claude Code skills encode the disciplines that matter, so they run instead of being

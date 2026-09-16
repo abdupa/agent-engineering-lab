@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
-    "smoke:openai": "node -r ts-node/register scripts/live-openai-smoke.ts"
+    "smoke:openai": "node -r ts-node/register scripts/live-openai-smoke.ts",
+    "probe:agent": "node -r ts-node/register scripts/live-agent-probe.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

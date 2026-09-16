@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "smoke:openai": "pnpm --filter @agent-engineering-lab/api smoke:openai",
+    "probe:agent": "pnpm --filter @agent-engineering-lab/api probe:agent",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && git diff --check"
   },
   "devDependencies": {

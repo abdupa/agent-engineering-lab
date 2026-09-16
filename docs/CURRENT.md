@@ -74,12 +74,45 @@ its startup workspace had no override. Fixed by overriding `AUDIT_WORKSPACE` the
 that test already overrides `MODEL_PROVIDER`, rather than by weakening the startup
 requirement to make the test pass.
 
+## Ready to run: the live probe
+
+`pnpm probe:agent` is written and waiting for a key. It is manual only — never runs in
+tests, startup or CI — and makes **at most three billable requests**.
+
+Two stages, cheapest risk first:
+
+1. **Schema probe, one request.** Does the live Structured Outputs API accept
+   `AgentDecisionTransportSchema`? That schema was designed for compatibility in v0.3-002
+   and has only ever been checked against an offline conversion test. It has never met a
+   real provider. If this fails, nothing after it matters.
+2. **Two-step audit, at most two requests**, against a temporary two-file fixture the
+   script creates and deletes. It deliberately does **not** read `AUDIT_ROOT`, so a probe
+   cannot wander into a real codebase.
+
+The fixture is built so its answer is checkable by hand: `parse.ts` calls `JSON.parse` on
+untrusted input with no validation, and its README claims the opposite. A useful run finds
+one or both. A run that reports findings without reading the files is the failure worth
+catching.
+
 ## Next
 
-**V0.6-004 — run it against this repository and record the result.** What it found, what
-it missed, what it invented. That record becomes the seed of the v1.0 evaluation set.
+**V0.6-004 — run the probe, then a capped audit of this repository, and record the
+result.** What it found, what it missed, what it invented. That record becomes the seed
+of the v1.0 evaluation set.
 
 This is the first milestone requiring a live model and real spend.
+
+## Known gap the probe will make concrete
+
+`AgentState.observations` accumulates every tool result, and the decision service
+serialises the whole state on every call. There is no truncation or windowing. On this
+repository the files are small enough that it should not matter; on a large codebase it is
+a wall. The probe is capped at two iterations partly to keep that bounded, and what a real
+run does with the tools is the evidence that would earn a memory or planning release.
+
+Separately, **spend is not instrumented.** Duration, outcome and correlation are logged;
+tokens and cost are not. After a live run you will know what the agent did but not what it
+cost, except from the provider dashboard.
 
 ## Limitations
 
