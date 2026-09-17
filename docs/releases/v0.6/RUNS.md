@@ -4,6 +4,67 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 6 — the fix was necessary and not sufficient
+
+Date: 2026-09-17 · `gpt-5.6-luna` · `apps/api/src/audit` · cap 20 · evidence-by-reference in place
+
+**Outcome: `DECISION_FAILED` at step 4. Zero findings. Same failure, different numbers —
+and the numbers are the point.**
+
+|                  | Run 5 (quoted evidence) | Run 6 (cited evidence) |
+| ---------------- | ----------------------- | ---------------------- |
+| outputTextLength | 978                     | **204**                |
+| endsWithBrace    | true                    | true                   |
+| quoteCount       | 68                      | 36                     |
+| backslashCount   | 46                      | **8**                  |
+
+The payload shrank by 79%. Source code is gone from it entirely. It still will not parse.
+
+### What correct escaping would have required
+
+A report-finding call with no evidence text needs, at the outer level, 14 unescaped
+quotes — six key strings plus the two delimiting `argumentsJson`. The inner JSON needs
+roughly 14 more, each preceded by a backslash.
+
+**Correct: ~28 quotes, ~14 backslashes. Observed: 36 quotes, 8 backslashes.**
+
+More quotes than a correct payload, and barely half the backslashes. That is the
+signature of inner quotes written raw instead of escaped.
+
+### The conclusion
+
+The model cannot reliably emit JSON inside a JSON string **even when the payload is short
+and contains no code.** Removing source text from findings was worth doing on its own
+merits — evidence is now read from the file and cannot disagree with the line it cites —
+but it treated a symptom.
+
+`argumentsJson` is the defect. It has been in place since v0.3-002, where it was adopted
+because Structured Outputs would not accept arbitrary object maps, and it has never been
+exercised by a model filling it with anything substantial.
+
+### What was checked before proposing a replacement
+
+Three transport shapes were run through the installed `zodTextFormat` helper offline. All
+three convert:
+
+```
+PASS  discriminated union on toolName, typed arguments   1590 chars
+PASS  flat optional per-tool argument slots              1309 chars
+PASS  current design, arguments as an escaped string      610 chars
+```
+
+Conversion is not acceptance — the live API is the only authority on that, and a one-call
+probe settles it. But the design is not blocked by the helper, which was the stated reason
+for the string in the first place.
+
+### Measurements
+
+10,682 tokens. 13.2s for four steps.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T04-05-25-934Z.json`
+
+---
+
 ## Run 5 — the agent found two real defects in this codebase
 
 Date: 2026-09-17 · `gpt-5.6-luna` · `apps/api/src/audit` · cap 12 · debug sampling on
