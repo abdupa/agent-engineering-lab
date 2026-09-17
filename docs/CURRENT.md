@@ -4,12 +4,60 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 to v0.7-006 are complete. v0.7-007 — the live run, the only paid step — is next and unauthorized.
+Status: **In progress.** v0.7-001 to v0.7-007 are complete. The release is ready to close, and closing it is unauthorized.
 
 Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-007 — the paid run, and what it answered
+
+Run 12, against the labeled target. 30,087 tokens against a 30,000 budget — a 0.3% overshoot
+where run 11 ran 13% over. Recorded in [v0.7/RUNS.md](releases/v0.7/RUNS.md).
+
+| Measure                  | Run 12         |
+| ------------------------ | -------------- |
+| Recall                   | 2/7 (29%)      |
+| Precision                | 2/4 (50%)      |
+| Citation accuracy        | 2/4 (50%)      |
+| Severity agreement       | **2/2 (100%)** |
+| False alarms on controls | **0/5**        |
+| Cost per located defect  | ~15,000 tokens |
+
+### The severity instruction worked
+
+2/2 exact, no drift in either direction. Run 11 rated everything high and was two ranks over
+on all of it. This is the clearest evidence so far that one of the 2026-09-17 prompt changes
+did what it was meant to — and it is two findings in one run, so it is a signal, not a
+result.
+
+### The citation instruction worked, and the tool cannot express it
+
+The agent reported the same defect at line 26, then 22, then 21. **Line 21 is exactly right.**
+It was reading the evidence echoed back and correcting itself, which is precisely what the
+prompt asked for.
+
+But `report-finding` can only add a finding, never replace one. So a correction arrives as
+another finding, and the report shows one defect three times with two wrong citations
+attached. The scoring rule then gives the defect to the _first_ citation inside the span — a
+closing brace — and calls the exact line a duplicate.
+
+**Two of the three prompt changes contradict each other.** "Re-report with a corrected line"
+and "report the clearest instance rather than repeating it" cannot both be obeyed with an
+append-only tool. Nothing revealed that until a run did both.
+
+### Recall of 2/7 cannot be trusted yet
+
+Three of five findings were spent re-citing one defect, and the run was still reading when
+the budget stopped it. Whether it missed five defects because it cannot see them or because
+it ran out of money is **unresolved**. A higher-budget run separates those.
+
+### Three gaps in the run record
+
+Analysing this run needed three things the record does not hold: what it audited, what it
+read and in what order, and why it failed. All three had to come from console output or by
+hand. The record was built to prove a run happened and is now being asked to explain one.
 
 ## v0.7-006 — a change to the scoring now fails the build
 
@@ -265,12 +313,18 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7-007 — one live run against the labeled target.** Not started, and **the only step in
-this release that costs money.** Everything before it was free by design, so that a paid run
-is spent on the question nothing offline can answer: what the agent does now, including
-whether the three prompt changes from 2026-09-17 helped.
+**Closing v0.7.** All seven milestones are done. Closing needs a RELEASE.md, a
+`/claims-audit`, and a decision on three things run 12 surfaced:
 
-It needs your go, because it spends tokens.
+1. **`report-finding` cannot replace a finding**, so an agent obeying the citation
+   instruction produces duplicates instead of corrections. This is the sharpest finding of
+   the release, and it is a tool defect rather than a prompt one.
+2. **The run record cannot say what it audited, what it read, or why it failed.** Three
+   gaps, all the same shape.
+3. **Recall of 2/7 is confounded with the budget.** One higher-budget run would separate
+   "cannot find" from "ran out of money". It costs money.
+
+None of these is started.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a

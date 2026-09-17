@@ -19,10 +19,12 @@ import {
 
 /**
  * Manual entry point only. Audits the real directory named by AUDIT_ROOT and writes the
- * result to docs/releases/v0.6/runs/ so it becomes evidence rather than scrollback.
+ * result under AUDIT_RECORDS_DIR so it becomes evidence rather than scrollback.
  *
- * Unlike the probe, there is no answer key here. The point is to find out what the agent
- * does against code nothing marked up in advance.
+ * Against real code there is no answer key, and the point is to find out what the agent
+ * does with something nobody marked up in advance. Against a labeled target there is one,
+ * and the point is a number that can be compared to the next run — but the agent cannot
+ * tell the difference, because the key lives outside the tree it reads.
  */
 
 const MAX_ITERATIONS = (() => {
@@ -35,7 +37,16 @@ const MAX_TOKENS = (() => {
   return Number.isSafeInteger(raw) && raw > 0 ? raw : undefined;
 })();
 
-const RECORDS = resolve(__dirname, '../../../docs/releases/v0.6/runs');
+/**
+ * Where the run record is written. Defaults to the v0.6 directory, which is where every
+ * record so far lives, and is overridable so a run belonging to a later release can be
+ * filed under that release instead of accumulating in v0.6 forever.
+ */
+const RECORDS = resolve(
+  __dirname,
+  '../../..',
+  process.env.AUDIT_RECORDS_DIR ?? 'docs/releases/v0.6/runs',
+);
 
 function fail(reason: string): void {
   console.error(JSON.stringify({ event: 'audit_blocked', reason }));
@@ -84,6 +95,10 @@ async function main(): Promise<void> {
     console.log(
       [
         '',
+        // The target is the one thing a mistake here makes most expensive: a run against
+        // the wrong directory costs the full budget and answers nothing.
+        `  auditing .......... ${process.env.AUDIT_ROOT}`,
+        `  record ............ ${process.env.AUDIT_RECORDS_DIR ?? 'docs/releases/v0.6/runs'}`,
         `  transport ......... ${typedArguments ? 'TYPED arguments' : 'JSON-string arguments (legacy; unset AGENT_TYPED_ARGUMENTS to restore)'}`,
         `  step budget ....... ${MAX_ITERATIONS}`,
         `  token budget ...... ${MAX_TOKENS ?? 'unbounded (set AUDIT_MAX_TOKENS)'}`,

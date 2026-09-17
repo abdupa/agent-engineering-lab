@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { loadRunRecords } from '../../src/evaluation/run-record.loader';
+import { loadCorpus } from '../../src/evaluation/run-record.loader';
+import { RECORD_DIRECTORIES } from '../../src/evaluation/corpus';
 import { loadRunLabel } from '../../src/evaluation/run-label.loader';
 import { scoreLabeledRun } from '../../src/evaluation/metrics';
 import {
@@ -29,7 +30,6 @@ import {
  */
 
 const repoRoot = resolve(__dirname, '../../../..');
-const RECORDS = join(repoRoot, 'docs/releases/v0.6/runs');
 const LABELS = join(repoRoot, 'docs/eval/labels');
 const BASELINE = join(repoRoot, 'docs/eval/baseline.json');
 
@@ -37,7 +37,7 @@ const baseline = JSON.parse(readFileSync(BASELINE, 'utf8')) as Baseline;
 
 async function scoreEverything(): Promise<Record<string, BaselineEntry>> {
   const entries: Record<string, BaselineEntry> = {};
-  for (const loaded of await loadRunRecords(RECORDS)) {
+  for (const loaded of await loadCorpus(repoRoot, RECORD_DIRECTORIES)) {
     if (!loaded.load.ok) continue;
     const record = loaded.load.record;
     const label = await loadRunLabel(LABELS, record.runId);

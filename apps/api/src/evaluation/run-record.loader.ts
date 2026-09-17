@@ -80,6 +80,33 @@ export async function loadRunRecords(
   );
 }
 
+/**
+ * Every record across every release directory.
+ *
+ * A directory that does not exist yet is skipped rather than throwing: the next release's
+ * folder is absent until its first run, and that is an ordinary state, not a failure.
+ */
+export async function loadCorpus(
+  repoRoot: string,
+  directories: readonly string[],
+): Promise<LoadedRecord[]> {
+  const found: LoadedRecord[] = [];
+  for (const directory of directories) {
+    try {
+      const entries = await loadRunRecords(join(repoRoot, directory));
+      found.push(
+        ...entries.map((entry) => ({
+          ...entry,
+          file: `${directory}/${entry.file}`,
+        })),
+      );
+    } catch {
+      continue;
+    }
+  }
+  return found.sort((left, right) => left.file.localeCompare(right.file));
+}
+
 /** Counts by outcome, for a caller that wants the headline before the detail. */
 export function summarizeLoads(loaded: readonly LoadedRecord[]): {
   readonly total: number;

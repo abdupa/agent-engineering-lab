@@ -1,7 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { loadRunRecords } from '../src/evaluation/run-record.loader';
+import { loadCorpus } from '../src/evaluation/run-record.loader';
+import { RECORD_DIRECTORIES } from '../src/evaluation/corpus';
 import { loadRunLabel } from '../src/evaluation/run-label.loader';
 import { loadAnswerKey, verifyTarget } from '../src/evaluation/target-verify';
 import {
@@ -31,7 +32,6 @@ import {
  */
 
 const repoRoot = resolve(__dirname, '../../..');
-const RECORDS = join(repoRoot, 'docs/releases/v0.6/runs');
 const LABELS = join(repoRoot, 'docs/eval/labels');
 const SCORECARDS = join(repoRoot, 'docs/eval/scorecards');
 const BASELINE = join(repoRoot, 'docs/eval/baseline.json');
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
   const targetDirectory = targetArgument();
   const updateBaseline = process.argv.includes('--update-baseline');
   const entries: Record<string, BaselineEntry> = {};
-  const loaded = await loadRunRecords(RECORDS);
+  const loaded = await loadCorpus(repoRoot, RECORD_DIRECTORIES);
   const rows: Row[] = [];
 
   // Resolved once: scoring nine runs against a target whose key is stale should fail once,

@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: In progress. v0.7-001 to v0.7-006 complete; v0.7-007 — the live run — not started.
+Status: In progress. All seven milestones complete. Not closed.
 
 ## The product requirement that earns this release
 
@@ -178,6 +178,30 @@ Prettier would reformat the fixture, which changes bytes the key has hashed and 
 target unscoreable. ESLint would report the planted defects as errors and fail the gate.
 Both exclusions are recorded where they are made, since a future reader finding an
 un-linted directory deserves the reason rather than a mystery.
+
+### What the paid run answered
+
+Run 12 is recorded in [RUNS.md](RUNS.md). Three things it settled:
+
+**The severity instruction worked.** 2/2 exact, no drift. Run 11 rated everything high and
+was two ranks over on all of it. Two findings in one run is a signal rather than a result,
+and it is the first time this repository has been able to tell the difference.
+
+**The citation instruction worked, and `report-finding` cannot express it.** The agent
+reported the same defect at line 26, then 22, then 21, landing exactly on the keyed line. It
+was reading the echoed evidence and correcting itself, as instructed. But the tool can only
+append, so the correction arrives as a third finding and the report shows one defect three
+times with two wrong citations attached. The matching rule then awards the defect to the
+first citation inside the span — a closing brace — and calls the exact line a duplicate.
+
+Two of the three prompt changes therefore contradict each other: "re-report with a corrected
+line" and "report the clearest instance rather than repeating it" cannot both be obeyed by an
+append-only tool. Nothing revealed that until a run did both, which is the whole argument for
+this release.
+
+**Recall of 2/7 is confounded with the budget** and is not yet evidence of anything. Three of
+five findings went on re-citing one defect, and the run was still reading when the budget
+stopped it.
 
 ### The gate, and why it pins exactly rather than setting a floor
 

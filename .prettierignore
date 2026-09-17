@@ -2,7 +2,9 @@ node_modules/
 dist/
 coverage/
 pnpm-lock.yaml
-docs/releases/v0.6/runs/
+# Run records are evidence. Reformatting one edits the record of what a paid run produced,
+# and the pattern covers every release so a new one does not silently fall outside it.
+docs/releases/*/runs/
 
 # Evaluation targets are data, not source. Their defects are planted deliberately and their
 # exact bytes are recorded in the answer key, so reformatting one silently invalidates the

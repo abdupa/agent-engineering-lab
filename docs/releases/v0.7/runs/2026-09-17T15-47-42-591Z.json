@@ -1,0 +1,60 @@
+{
+  "runId": "706f7e2d-2e17-4a4a-b8c8-bcde1f97b172",
+  "startedAt": "2026-09-17T15:47:42.591Z",
+  "model": "gpt-5.6-luna",
+  "maxIterations": 20,
+  "maxTokens": 30000,
+  "typedArguments": true,
+  "rubric": "(default)",
+  "outcome": "BUDGET_EXCEEDED",
+  "toolCalls": 12,
+  "usage": {
+    "calls": 13,
+    "inputTokens": 28061,
+    "outputTokens": 2026,
+    "totalTokens": 30087
+  },
+  "summary": "Audit did not complete (BUDGET_EXCEEDED). 5 finding(s) recorded before the failure.",
+  "findings": [
+    {
+      "path": "files.ts",
+      "line": 26,
+      "endLine": 26,
+      "severity": "medium",
+      "claim": "write() returns true even when writeFile fails, falsely reporting that the attachment was stored and hiding write errors from callers.",
+      "evidence": "  async removeAll(names: readonly string[]): Promise<number> {"
+    },
+    {
+      "path": "files.ts",
+      "line": 22,
+      "endLine": 22,
+      "severity": "medium",
+      "claim": "write() returns true even when writeFile fails, falsely reporting that the attachment was stored and hiding write errors from callers.",
+      "evidence": "    }"
+    },
+    {
+      "path": "files.ts",
+      "line": 21,
+      "endLine": 21,
+      "severity": "medium",
+      "claim": "write() returns true even when writeFile fails, falsely reporting that the attachment was stored and hiding write errors from callers.",
+      "evidence": "      return true;"
+    },
+    {
+      "path": "db.ts",
+      "line": 21,
+      "endLine": 21,
+      "severity": "high",
+      "claim": "findByEmail interpolates the caller-supplied email directly into SQL, allowing SQL injection and potentially unauthorized database access.",
+      "evidence": "      `SELECT id, email, role FROM users WHERE email = '${email}' LIMIT 1`,"
+    },
+    {
+      "path": "config.ts",
+      "line": 17,
+      "endLine": 17,
+      "severity": "high",
+      "claim": "A production-looking reporting API key is hardcoded as a fallback in source, so deployments without REPORTING_API_KEY use a shared exposed credential instead of refusing to start.",
+      "evidence": ""
+    }
+  ]
+}
