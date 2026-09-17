@@ -40,6 +40,22 @@ happened, and caught by reading the two side by side.
 | 13  | **v1.8 — TDD code generation** | #13 Code-Generation          | The agent writes code, and the only trustworthy correction signal is a failing test.         |
 | 14  | **v2.0 — Extraction**          | —                            | Patterns that proved themselves in production become reusable deliberately, not by accident. |
 
+### Reordered 2026-09-17, by evidence
+
+Evaluation and verification moved ahead of the second agent after
+[run 11](releases/v0.6/RUNS.md): the agent recorded three findings against real code and
+**one of the three citations was accurate**. All three were the same observation applied
+to three files, rated high each time, for a defect requiring an attacker who already has
+write access.
+
+Nothing in the repository can say whether one-in-three is good, whether a prompt change
+improves it, or whether a later change makes it worse. Building a second agent first would
+have produced two agents nobody can measure instead of one.
+
+Verification follows evaluation rather than leading it — a checker comparing claim against
+evidence would have caught two of those three, and without a baseline there is no way to
+show that it did.
+
 ### Order is a direction, not a queue
 
 A roadmap entry is not authorization, and this list is not a sequence to drain. Build what

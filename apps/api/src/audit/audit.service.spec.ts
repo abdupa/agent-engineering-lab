@@ -433,6 +433,26 @@ describe('the rubric', () => {
     expect(state.goal).toContain('report-finding');
   });
 
+  it('tells the agent to check what its citation actually landed on', async () => {
+    // Run 11 produced three findings, two citing the wrong lines. The tool already
+    // echoes the resolved text back; nothing had told the agent to read it.
+    const { audit, seen } = service([finish('Done.')]);
+    await audit.audit(workspace);
+    const state = seen[0] as { goal: string };
+    expect(state.goal).toContain('Check every citation');
+    expect(state.goal).toContain('corrected line');
+  });
+
+  it('tells the agent what severity means and not to repeat a claim', async () => {
+    // Also from run 11: the same observation reported against three files, high each
+    // time, for something needing an attacker with write access already.
+    const { audit, seen } = service([finish('Done.')]);
+    await audit.audit(workspace);
+    const state = seen[0] as { goal: string };
+    expect(state.goal).toContain('Severity is about consequence');
+    expect(state.goal).toContain('clearest instance');
+  });
+
   it('tells the agent to report incrementally rather than at the end', async () => {
     // A live run spent nine of twelve steps reading and reported nothing before it
     // failed. The instruction to report as it goes is the response to that.

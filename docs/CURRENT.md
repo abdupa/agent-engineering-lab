@@ -48,10 +48,20 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7 — Second agent (contract review).** Not started. Its first task is the completing
-run v0.6 owes, since the fix is already in.
+**v0.7 — Evaluation.** Not started. Reordered ahead of the second agent after run 11
+recorded three findings with one accurate citation among them, and nothing in the
+repository could say whether that is good.
 
-Agent #2 is also the test of the platform claim: if it arrives by copying a folder and
-swapping the tools, the boundary was right. If it means editing shared code, it was not.
+The inputs already exist: eleven recorded runs, each with its findings and hand-checked
+citations. What is missing is a labeled set, metrics that mean something — citation
+accuracy, claim/evidence agreement, findings per ten thousand tokens — and a gate that
+notices a regression.
+
+**v0.8 — Verification** follows it, because a checker that compares a claim against its
+evidence would have caught two of run 11's three, and without a baseline there is no way
+to show that it did.
+
+**v0.9 — Second agent (contract review)** after those. It remains the test of the platform
+claim: if it arrives by copying a folder and swapping the tools, the boundary was right.
 
 A planned task is not authorization to start it.
