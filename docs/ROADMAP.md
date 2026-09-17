@@ -39,7 +39,7 @@ side is exactly the check nobody performs twice.
 | 9   | **v1.4 — Code execution**      | #7 Data Analysis             | A question needs computation over data, not retrieval of prose.                              |
 | 10  | **v1.5 — Compliance / policy** | #14 Compliance / Security    | Output must satisfy a written policy before it is allowed to leave.                          |
 | 11  | **v1.6 — Explainability**      | #24 Explainable              | A reviewer must audit why the agent concluded what it concluded.                             |
-| 12  | **v1.7 — Operator console**    | —                            | Someone must watch runs, approve the gates v0.9 created, and debug a failure.                |
+| 12  | **v1.7 — Operator console**    | —                            | Someone must watch runs, approve the gates v1.1 created, and debug a failure.                |
 | 13  | **v1.8 — TDD code generation** | #13 Code-Generation          | The agent writes code, and the only trustworthy correction signal is a failing test.         |
 | 14  | **v2.0 — Extraction**          | —                            | Patterns that proved themselves in production become reusable deliberately, not by accident. |
 
