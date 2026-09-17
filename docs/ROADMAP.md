@@ -19,22 +19,41 @@ A roadmap entry is not authorization. [CURRENT.md](CURRENT.md) names what is act
 
 ## Scheduled
 
-| #   | Release                                  | Pattern                      | The requirement that earns it                                                                |
-| --- | ---------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| 1   | **v0.6 — Memory**                        | #3 Memory-Augmented          | A user returning next week gets an agent that already knows their constraints.               |
-| 2   | **v0.7 — Planning**                      | #2 Planning                  | Work needs more than one tool call, and a bad plan wastes the user's time and your money.    |
-| 3   | **v0.8 — Async execution**               | #12 (part 1)                 | A job runs for minutes. Submit and be notified; no held connection.                          |
-| 4   | **v0.9 — Guardrails & HITL**             | #12 (part 2), #23 folded in  | The agent does something with consequences. High-risk actions require a human.               |
-| 5   | **v1.0 — Evaluation**                    | —                            | Quality regresses silently when you change a prompt or a model. Catch it before users do.    |
-| 6   | **v1.1 — Verification**                  | #8 Verification & Validation | An answer cites its evidence and is still wrong. Citation is not support.                    |
-| 7   | **v1.2 — Document intelligence**         | #5 Document Intelligence     | The source material arrives as PDFs, not clean text.                                         |
-| 8   | **v1.3 — Code execution**                | #7 Data Analysis             | A question needs computation over data, not retrieval of prose.                              |
-| 9   | **v1.4 — Compliance & policy-as-code**   | #14 Compliance / Security    | Output must satisfy a written policy before it is allowed to leave.                          |
-| 10  | **v1.5 — Explainability**                | #24 Explainable              | A reviewer must audit why the agent concluded what it concluded.                             |
-| 11  | **v1.6 — Operator console**              | —                            | Someone must watch runs, approve the gates v0.9 created, and debug a failure.                |
-| 12  | **v1.7 — TDD code generation**           | #13 Code-Generation          | The agent writes code, and the only trustworthy correction signal is a failing test.         |
-| 13  | **v1.8 — Hybrid retrieval & provenance** | #4 (completion)              | Semantic search misses exact terms, and a reader needs to know where a claim came from.      |
-| 14  | **v2.0 — Extraction**                    | —                            | Patterns that proved themselves in production become reusable deliberately, not by accident. |
+Renumbered 2026-09-17. The table previously listed v0.6 as Memory while the SPEC and
+CURRENT had already moved it to the first agent — drift left behind when that pivot
+happened, and caught by reading the two side by side.
+
+| #   | Release                        | Pattern                      | The requirement that earns it                                                                |
+| --- | ------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| 1   | **v0.6 — First agent**         | #1, #10 applied              | An auditor needs findings on a codebase without reading every file by hand.                  |
+| 2   | **v0.7 — Second agent**        | #5, #4 extended              | A reviewer needs the risky clauses in a contract, with the clause text attached.             |
+| 3   | **v0.8 — Async execution**     | #12 (part 1)                 | A job runs for minutes. Submit and be notified; no held connection.                          |
+| 4   | **v0.9 — Guardrails & HITL**   | #12 (part 2), #23 folded in  | Nothing reaches a client without a human approving it.                                       |
+| 5   | **v1.0 — Evaluation**          | —                            | Quality regresses silently when a prompt or model changes. Catch it before users do.         |
+| 6   | **v1.1 — Verification**        | #8 Verification & Validation | An answer cites its evidence and is still wrong. Citation is not support.                    |
+| 7   | **v1.2 — Memory**              | #3 Memory-Augmented          | A reviewer returning next week gets an agent that already knows their constraints.           |
+| 8   | **v1.3 — Planning**            | #2 Planning                  | Work needs more than one tool call, and a bad plan wastes time and money.                    |
+| 9   | **v1.4 — Code execution**      | #7 Data Analysis             | A question needs computation over data, not retrieval of prose.                              |
+| 10  | **v1.5 — Compliance / policy** | #14 Compliance / Security    | Output must satisfy a written policy before it is allowed to leave.                          |
+| 11  | **v1.6 — Explainability**      | #24 Explainable              | A reviewer must audit why the agent concluded what it concluded.                             |
+| 12  | **v1.7 — Operator console**    | —                            | Someone must watch runs, approve the gates v0.9 created, and debug a failure.                |
+| 13  | **v1.8 — TDD code generation** | #13 Code-Generation          | The agent writes code, and the only trustworthy correction signal is a failing test.         |
+| 14  | **v2.0 — Extraction**          | —                            | Patterns that proved themselves in production become reusable deliberately, not by accident. |
+
+### Order is a direction, not a queue
+
+A roadmap entry is not authorization, and this list is not a sequence to drain. Build what
+the product needs next and record why the order changed. **Memory and planning moved down**
+because the first two agents have no returning users and no multi-step goals yet — building
+either now would be infrastructure for a need that does not exist.
+
+Three dependencies are real rather than conventional:
+
+```
+guardrails  ──before──►  code execution   untrusted code needs an approval boundary first
+evaluation  ──before──►  self-improving   a policy cannot improve without measurement
+async       ──before──►  anything long    a five-minute job cannot hold a request open
+```
 
 ### Every row above also carries
 

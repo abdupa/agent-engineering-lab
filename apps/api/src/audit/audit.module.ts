@@ -52,9 +52,14 @@ import { Workspace } from './workspace';
     },
     {
       provide: AgentDecisionService,
-      inject: [MODEL_PROVIDER],
-      useFactory: (provider: ModelProvider) =>
-        new AgentDecisionService(provider),
+      inject: [MODEL_PROVIDER, ConfigService],
+      useFactory: (provider: ModelProvider, config: ConfigService) =>
+        // Off unless asked for. The string transport is what v0.1-v0.5 shipped against,
+        // and the live API's acceptance of the typed shape is confirmed by a probe
+        // rather than assumed here. See ADR-017.
+        new AgentDecisionService(provider, {
+          typedArguments: config.get<string>('AGENT_TYPED_ARGUMENTS') === '1',
+        }),
     },
     {
       provide: AuditService,

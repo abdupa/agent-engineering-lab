@@ -87,9 +87,14 @@ export class AgentRunner {
       let permissions: ToolPermissionContext | undefined;
       try {
         state = AgentStateSchema.parse(initialState);
-        descriptions = tools.map(({ name, description }) => ({
+        // Name, description and input schema only. Handlers, permissions and the
+        // executor stay out of anything the decision layer can see; a Zod schema is
+        // used to shape the request, never serialized into model input, so it is safe
+        // to carry and is what the typed-argument transport needs.
+        descriptions = tools.map(({ name, description, inputSchema }) => ({
           name,
           description,
+          inputSchema,
         }));
         permissions = options.permissions && {
           grantedPermissions: [...options.permissions.grantedPermissions],
