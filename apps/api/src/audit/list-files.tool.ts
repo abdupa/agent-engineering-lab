@@ -3,22 +3,8 @@ import type { Tool } from '../tools/tool';
 import { walkFiles } from './walk';
 import type { Workspace } from './workspace';
 
-/**
- * Empty means the workspace root.
- *
- * `.default()` only applies when a field is absent, and under strict Structured Outputs
- * nothing is absent — the model must supply every property. It supplied an empty string,
- * which passed the schema and then threw at execution. Defaults stopped protecting
- * model-supplied input the moment typed arguments were turned on.
- */
-const rootedPath = z
-  .string()
-  .trim()
-  .default('.')
-  .transform((value) => (value === '' ? '.' : value));
-
 const inputSchema = z.object({
-  path: rootedPath,
+  path: z.string().trim().default('.'),
   maxDepth: z.number().int().min(1).max(10).default(4),
   limit: z.number().int().min(1).max(500).default(200),
 });
@@ -46,6 +32,13 @@ export function createListFilesTool(
     inputSchema,
     outputSchema,
     execute: async ({ path, maxDepth, limit }, { signal }) =>
-      walkFiles(workspace, path, { maxDepth, limit, signal }),
+      // Empty means the root. Normalized here rather than in the schema: `.default()`
+      // never fires when the model must supply every property, and a `.transform()`
+      // cannot be represented in JSON Schema, which breaks the typed transport outright.
+      walkFiles(workspace, path === '' ? '.' : path, {
+        maxDepth,
+        limit,
+        signal,
+      }),
   };
 }

@@ -14,13 +14,7 @@ const inputSchema = z.object({
   // deadline is a promise race that cannot fire while the loop is blocked. Refusing
   // regular expressions removes the class rather than trying to bound it.
   query: z.string().min(1).max(200),
-  path: z
-    .string()
-    .trim()
-    .default('.')
-    // Empty means the workspace root; see list-files.tool.ts for why a default is
-    // not enough once every property must be supplied.
-    .transform((value) => (value === '' ? '.' : value)),
+  path: z.string().trim().default('.'),
   caseSensitive: z.boolean().default(false),
   maxDepth: z.number().int().min(1).max(10).default(4),
   limit: z.number().int().min(1).max(200).default(50),
@@ -54,7 +48,8 @@ export function createGrepTool(
       { query, path, caseSensitive, maxDepth, limit },
       { signal },
     ) => {
-      const { files } = await walkFiles(workspace, path, {
+      // Empty means the root; normalized here, not in the schema. See list-files.
+      const { files } = await walkFiles(workspace, path === '' ? '.' : path, {
         maxDepth,
         // Scan a wider set of files than we will report matches from.
         limit: 500,

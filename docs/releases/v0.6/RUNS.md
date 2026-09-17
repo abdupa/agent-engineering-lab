@@ -4,6 +4,64 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 9 — broken before the network, by the previous fix
+
+Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments ON by default · debug sample ON
+
+**Outcome: `CONFIGURATION` at step 1. Zero provider calls. Zero tokens. 1.7 ms.**
+
+```
+attempt: 0   durationMs: 1.690607   inputTokens: 0   code: CONFIGURATION
+```
+
+`attempt: 0` means `observeOpenAIFetch` never ran: nothing left the process. The only
+path to `CONFIGURATION` before a request is `zodTextFormat` refusing to convert the
+schema.
+
+### Cause: the fix from run 7
+
+Run 7 found that the model sends `path: ""` because strict Structured Outputs requires
+every property, so `.default()` never fires. The fix used `.transform()` to map empty to
+the root.
+
+**Transforms cannot be represented in JSON Schema.** `list-files` and `grep` stopped
+converting, and under the typed transport every tool's schema is part of the model-facing
+union — so two unconvertible tools took every decision down with them.
+
+```
+list-files       ✗  Transforms cannot be represented in JSON Schema
+read-file        ✓
+grep             ✗  Transforms cannot be represented in JSON Schema
+report-finding   ✓
+```
+
+### Why nothing caught it
+
+The conversion check had been run **once, by hand, as a throwaway script, and deleted.**
+It had already earned its keep once — it was what caught `.optional()` without
+`.nullable()` on a finding's line before that reached a live call. Then it was thrown
+away, and the next schema mistake went straight to production.
+
+### Fixed
+
+Empty-to-root normalization moved into the handlers, where it belongs — the same rule
+recorded in ADR-017 one commit earlier: **shape belongs in the schema, behaviour belongs
+in the handler.** The schema went back to a plain `.default('.')`.
+
+And the check is now a test rather than a script: every registered tool must convert,
+the whole typed decision schema must convert and report `strict: true` with no optional
+or open properties, and one test pins the transform failure itself so the mechanism is
+documented rather than folklore.
+
+### What it cost
+
+Nothing but time — zero tokens, no request made. The cheapest possible failure, and only
+because the guard fires before the network rather than after.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T08-06-23-643Z.json`
+
+---
+
 ## Run 8 — the string transport, by accident, and a second data point
 
 Date: 2026-09-17 · `gpt-5.6-luna` · **typed arguments OFF** · cap 20 steps / 60,000 tokens
