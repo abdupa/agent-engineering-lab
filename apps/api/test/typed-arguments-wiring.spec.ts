@@ -72,27 +72,31 @@ describe('AGENT_TYPED_ARGUMENTS reaches the decision service', () => {
   });
   afterEach(() => jest.restoreAllMocks());
 
-  it('asks for a typed object when set to 1', async () => {
-    const harness = await bootWith('1');
-    try {
-      await harness.run();
-      expect(harness.provider.instructions[0]).not.toContain('argumentsJson');
-      expect(harness.provider.instructions[0]).toContain('arguments filled in');
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it.each([[undefined], ['0'], ['true']])(
-    'keeps the string transport when the flag is %p',
+  it.each([[undefined], ['1'], ['true'], ['']])(
+    'asks for a typed object when the flag is %p',
     async (flag) => {
       const harness = await bootWith(flag);
       try {
         await harness.run();
-        expect(harness.provider.instructions[0]).toContain('argumentsJson');
+        expect(harness.provider.instructions[0]).not.toContain('argumentsJson');
+        expect(harness.provider.instructions[0]).toContain(
+          'arguments filled in',
+        );
       } finally {
         await harness.close();
       }
     },
   );
+
+  it('returns to the string transport only on an explicit 0', async () => {
+    // The opt-out has to be deliberate. Anything else, including a typo, keeps the
+    // transport that three live runs showed the string one could not match.
+    const harness = await bootWith('0');
+    try {
+      await harness.run();
+      expect(harness.provider.instructions[0]).toContain('argumentsJson');
+    } finally {
+      await harness.close();
+    }
+  });
 });

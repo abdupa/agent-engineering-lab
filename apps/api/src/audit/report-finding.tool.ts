@@ -1,7 +1,7 @@
 import { open } from 'node:fs/promises';
 import { z } from 'zod';
 import type { Tool } from '../tools/tool';
-import { citedLines, createLocatedFindingSchema } from './finding.schema';
+import { FindingRequestSchema, citedLines } from './finding.schema';
 import type { Finding, FindingRequest } from './finding.schema';
 import type { Workspace } from './workspace';
 
@@ -45,10 +45,13 @@ async function readCitedLines(
   workspace: Workspace,
   request: FindingRequest,
 ): Promise<string | undefined> {
+  // Enforced here rather than in the schema: a failure becomes a tool observation the
+  // agent can act on, instead of killing the decision that produced it.
+  const absolute = await workspace.resolveExisting(request.path);
+
   const cited = citedLines(request);
   if (cited.line === undefined) return undefined;
 
-  const absolute = await workspace.resolveExisting(request.path);
   const handle = await open(absolute, 'r');
   let text: string;
   try {
@@ -93,7 +96,15 @@ export function createReportFindingTool(
       '(high, medium or low), claim (what is wrong, in your own words). Do not send the ' +
       'source text — the cited lines are read from the file and attached for you.',
     requiredPermissions: ['audit:report'],
-    inputSchema: createLocatedFindingSchema(workspace),
+    /**
+     * Structural only, deliberately.
+     *
+     * This schema is also the model-facing one under the typed transport, and anything
+     * enforced here fails the *decision* rather than the *call* — which terminates the
+     * run instead of handing the agent an observation it can correct from. Whether a
+     * cited path exists is policy, and policy belongs at the executor.
+     */
+    inputSchema: FindingRequestSchema,
     outputSchema,
     execute: async (request) => {
       const evidence = await readCitedLines(workspace, request);

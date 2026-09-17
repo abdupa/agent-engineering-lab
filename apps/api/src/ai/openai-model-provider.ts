@@ -180,7 +180,11 @@ export class OpenAIModelProvider implements ModelProvider {
       });
     }
     try {
-      return request.schema.parse(data);
+      // Async, to match ToolExecutor. A tool input schema may carry an async refinement
+      // — report-finding checks that a cited path exists — and once such a schema is
+      // part of the model-facing union, a synchronous parse of that branch throws. The
+      // typed transport only avoided it by never reaching a finding.
+      return await request.schema.parseAsync(data);
     } catch {
       // The value itself is never logged: it is model output and may carry anything.
       throw this.invalidOutput('schema_rejected');

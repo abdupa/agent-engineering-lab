@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { Workspace } from './workspace';
 
 export const SEVERITIES = ['high', 'medium', 'low'] as const;
 
@@ -79,19 +78,13 @@ export const AuditReportSchema = z.object({
 export type AuditReport = z.infer<typeof AuditReportSchema>;
 
 /**
- * Adds the workspace-dependent check: the cited file must exist inside the audited tree.
- * A model can invent a plausible path as easily as a real one.
+ * The workspace-dependent check — the cited file must exist inside the audited tree —
+ * lives in the tool's handler, not here.
+ *
+ * Under the typed transport a tool's input schema is also the model-facing schema, so a
+ * refinement here would reject the *decision* and terminate the run rather than
+ * returning an observation the agent could correct from. Shape belongs in the schema;
+ * policy belongs at the executor.
+ *
+ * See `readCitedLines` in report-finding.tool.ts.
  */
-export function createLocatedFindingSchema(workspace: Workspace) {
-  return FindingRequestSchema.refine(
-    async (finding) => {
-      try {
-        await workspace.resolveExisting(finding.path);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    { message: 'Finding path does not exist in the audited workspace' },
-  );
-}

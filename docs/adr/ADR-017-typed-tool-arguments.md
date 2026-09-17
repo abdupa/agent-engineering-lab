@@ -1,7 +1,8 @@
 # ADR-017 — Typed tool arguments alongside the JSON-string transport
 
-Status: Accepted. Typed transport implemented and off by default, pending live
-acceptance of the schema shape.
+Status: Accepted and **on by default since 2026-09-17**. This ADR made live acceptance
+the condition for flipping the default; run 7 met it. `AGENT_TYPED_ARGUMENTS=0` returns
+to the string transport.
 
 ## Context
 
@@ -72,9 +73,23 @@ and no optional property, refuses to build unless every tool supplies a schema, 
 refuses a tool named `finish`. The observed run-6 failure is reproduced against the string
 transport and shown to be unconstructible in the typed one.
 
-**Conversion is not acceptance.** Strict Structured Outputs enforces server-side rules
-this repository cannot check, so the typed transport stays off until one live call
-confirms the API accepts the shape. That probe has not been run.
+**Conversion was not acceptance, and the probe has now run.** Run 7 executed nine tool
+calls through the typed transport against the live API. The condition this ADR set is
+met and the default is flipped.
+
+Flipping it surfaced two defects that the off-by-default setting had been hiding:
+
+- `OpenAIModelProvider` parsed model output **synchronously** while `ToolExecutor` parsed
+  asynchronously. Once a tool's input schema became part of the model-facing union, an
+  async refinement in that schema made a sync parse throw. It was masked only because no
+  run had reached a finding. The provider now parses async, like the executor.
+- A tool's input schema is also its **model-facing** schema under this transport, so
+  anything enforced there rejects the _decision_ rather than the _call_ — terminating the
+  run instead of handing the agent a recoverable observation. `report-finding` now
+  validates shape in the schema and checks path existence in its handler.
+
+The second is the general rule: **shape belongs in the schema, policy belongs at the
+executor.** A policy failure must be able to become an observation.
 
 One constraint was found this way rather than in production: `report-finding` used
 `.optional()` without `.nullable()` on `line` and `endLine`, which the API rejects. Those

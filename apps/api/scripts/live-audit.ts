@@ -71,7 +71,7 @@ async function main(): Promise<void> {
     // Built from the container's decision service rather than the container's audit
     // service, so this script can set its own step budget without reaching into
     // anything private.
-    const typedArguments = process.env.AGENT_TYPED_ARGUMENTS === '1';
+    const typedArguments = process.env.AGENT_TYPED_ARGUMENTS !== '0';
     const service = new AuditService(app.get(AgentDecisionService), {
       maxIterations: MAX_ITERATIONS,
       timeoutMs: 300_000,
@@ -84,7 +84,7 @@ async function main(): Promise<void> {
     console.log(
       [
         '',
-        `  transport ......... ${typedArguments ? 'TYPED arguments' : 'JSON-string arguments (AGENT_TYPED_ARGUMENTS=1 to switch)'}`,
+        `  transport ......... ${typedArguments ? 'TYPED arguments' : 'JSON-string arguments (legacy; unset AGENT_TYPED_ARGUMENTS to restore)'}`,
         `  step budget ....... ${MAX_ITERATIONS}`,
         `  token budget ...... ${MAX_TOKENS ?? 'unbounded (set AUDIT_MAX_TOKENS)'}`,
         `  invalid-output sample ${process.env.PROVIDER_DEBUG_INVALID_OUTPUT === '1' ? 'ON' : 'off (PROVIDER_DEBUG_INVALID_OUTPUT=1 to enable)'}`,

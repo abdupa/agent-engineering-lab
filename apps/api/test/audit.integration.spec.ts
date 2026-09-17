@@ -18,19 +18,17 @@ import { httpObservability } from '../src/observability/http-observability';
 
 interface Transport {
   decision:
-    | { type: 'finish'; result: string }
-    | { type: 'tool_call'; toolName: string; argumentsJson: string };
+    | { toolName: 'finish'; result: string }
+    | { toolName: string; arguments: unknown };
 }
 
+// The typed transport is the default since ADR-017's condition was met, so the scripted
+// provider answers in that shape — the tests exercise the real configuration.
 const call = (toolName: string, args: unknown): Transport => ({
-  decision: {
-    type: 'tool_call',
-    toolName,
-    argumentsJson: JSON.stringify(args),
-  },
+  decision: { toolName, arguments: args },
 });
 const finish = (result: string): Transport => ({
-  decision: { type: 'finish', result },
+  decision: { toolName: 'finish', result },
 });
 
 const reportReadme = call('report-finding', {
@@ -68,7 +66,7 @@ class ScriptedProvider implements ModelProvider {
   generateStructured<T>(req: StructuredGenerationRequest<T>): Promise<T> {
     const next = this.script[this.index++];
     if (!next) throw new Error('Script exhausted');
-    return Promise.resolve(req.schema.parse(next));
+    return req.schema.parseAsync(next);
   }
 }
 

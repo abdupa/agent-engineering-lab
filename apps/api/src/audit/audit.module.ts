@@ -54,11 +54,11 @@ import { Workspace } from './workspace';
       provide: AgentDecisionService,
       inject: [MODEL_PROVIDER, ConfigService],
       useFactory: (provider: ModelProvider, config: ConfigService) =>
-        // Off unless asked for. The string transport is what v0.1-v0.5 shipped against,
-        // and the live API's acceptance of the typed shape is confirmed by a probe
-        // rather than assumed here. See ADR-017.
+        // On unless explicitly disabled. ADR-017 set live acceptance as the condition
+        // for this default and run 7 met it; AGENT_TYPED_ARGUMENTS=0 returns to the
+        // string transport.
         new AgentDecisionService(provider, {
-          typedArguments: config.get<string>('AGENT_TYPED_ARGUMENTS') === '1',
+          typedArguments: config.get<string>('AGENT_TYPED_ARGUMENTS') !== '0',
         }),
     },
     {

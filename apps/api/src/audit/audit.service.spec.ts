@@ -13,19 +13,17 @@ import { Workspace } from './workspace';
 
 interface Transport {
   decision:
-    | { type: 'finish'; result: string }
-    | { type: 'tool_call'; toolName: string; argumentsJson: string };
+    | { toolName: 'finish'; result: string }
+    | { toolName: string; arguments: unknown };
 }
 
+// The typed transport is the default since ADR-017's condition was met, so the scripted
+// provider answers in that shape — the tests exercise the real configuration.
 const call = (toolName: string, args: unknown): Transport => ({
-  decision: {
-    type: 'tool_call',
-    toolName,
-    argumentsJson: JSON.stringify(args),
-  },
+  decision: { toolName, arguments: args },
 });
 const finish = (result: string): Transport => ({
-  decision: { type: 'finish', result },
+  decision: { toolName: 'finish', result },
 });
 
 /** Records the state the model saw before each decision, then replays a script. */
@@ -37,7 +35,7 @@ function scriptedProvider(script: readonly Transport[]) {
       seen.push(input.state);
       const next = script[seen.length - 1];
       if (!next) throw new Error('Script exhausted');
-      return Promise.resolve(request.schema.parse(next));
+      return request.schema.parseAsync(next);
     },
   };
   return { provider, seen };
@@ -251,10 +249,13 @@ describe('a finding that points at nothing', () => {
     expect(report.findings[0]?.path).toBe('README.md');
 
     // The failed attempt came back as an observation the model could learn from.
+    // EXECUTION_FAILED rather than INVALID_INPUT: path existence is checked in the
+    // handler, because under the typed transport a schema refinement would have
+    // rejected the decision and ended the run instead.
     const secondState = seen[1] as { observations: { status: string }[] };
     expect(secondState.observations[0]).toMatchObject({
       status: 'failure',
-      code: 'INVALID_INPUT',
+      code: 'EXECUTION_FAILED',
     });
   });
 

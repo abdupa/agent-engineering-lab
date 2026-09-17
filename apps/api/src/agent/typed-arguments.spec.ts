@@ -202,7 +202,21 @@ describe('both transports produce the same canonical decision', () => {
 });
 
 describe('the switch', () => {
-  it('uses the string transport by default', async () => {
+  it('uses the typed transport by default', async () => {
+    const { provider, seen } = providerReturning({
+      decision: {
+        toolName: 'read-file',
+        arguments: { path: 'a.ts', maxBytes: 100 },
+      },
+    });
+    await new AgentDecisionService(provider).decide(
+      { goal: 'Audit', observations: [] },
+      tools,
+    );
+    expect(seen[0]?.instructions).not.toContain('argumentsJson');
+  });
+
+  it('returns to the string transport when explicitly disabled', async () => {
     const { provider, seen } = providerReturning({
       decision: {
         type: 'tool_call',
@@ -210,7 +224,7 @@ describe('the switch', () => {
         argumentsJson: '{"path":"a.ts","maxBytes":100}',
       },
     });
-    await new AgentDecisionService(provider).decide(
+    await new AgentDecisionService(provider, { typedArguments: false }).decide(
       { goal: 'Audit', observations: [] },
       tools,
     );

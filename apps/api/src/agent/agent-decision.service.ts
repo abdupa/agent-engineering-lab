@@ -127,8 +127,11 @@ Do not execute tools. Return the decision inside the required decision wrapper.`
 
 export interface AgentDecisionOptions {
   /**
-   * Request arguments as a typed object. Off by default: the string transport is what
-   * v0.1-v0.5 shipped against, and switching it is a decision to make deliberately.
+   * Request arguments as a typed object rather than an escaped JSON string.
+   *
+   * On by default since run 7 confirmed the live API accepts the typed schema, which was
+   * the condition ADR-017 set for flipping it. The string transport under-escaped in
+   * three separate live runs and never completed one; set this to false to return to it.
    */
   readonly typedArguments?: boolean;
 }
@@ -154,7 +157,7 @@ export class AgentDecisionService {
       throw new Error('Agent decision input is invalid');
     }
     const typed =
-      this.options.typedArguments === true &&
+      this.options.typedArguments !== false &&
       tools.length > 0 &&
       tools.every((tool) => tool.inputSchema);
 
