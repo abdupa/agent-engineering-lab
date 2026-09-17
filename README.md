@@ -33,10 +33,18 @@ demand. [PATTERNS.md](docs/PATTERNS.md) carries a verdict on all thirty.
 Carried forward from the AI Engineering Laboratory: provider boundary with runtime
 validation, a permissioned tool system, a bounded agent loop, an orchestration state
 machine with checkpoint and pause semantics, and a retrieval subsystem with grounded
-generation and citation integrity.
+generation and citation integrity. That inheritance was 468 tests across 25 suites.
 
-**468 tests across 25 suites. 16 ADRs.** Two catalogue patterns complete (#1 Autonomous
-Decision-Making, #10 Tool-Using), one partial (#4 Knowledge Retrieval).
+Built here: a working audit agent behind `POST /audit` (v0.6), and an evaluation harness
+that can say how well it did (v0.7).
+
+**939 tests across 48 suites. 17 ADRs.** Two catalogue patterns complete (#1 Autonomous
+Decision-Making, #10 Tool-Using), one partial (#4 Knowledge Retrieval). v0.7 advances no
+catalogue pattern: evaluation is the instrument the later ones depend on, not a pattern
+itself.
+
+What the agent scores is in [docs/eval/](docs/eval/). The short version is two located
+defects out of seven on a labeled target, severity rated correctly, and one run.
 
 ## Commands
 
@@ -87,9 +95,15 @@ pnpm probe:agent    # the agent decision schema, then a short audit of a fixture
 pnpm audit:live     # audit the real AUDIT_ROOT and save the run as evidence
 ```
 
-`audit:live` writes each run to `docs/releases/v0.6/runs/` so results become evidence
-rather than terminal scrollback. Step budget via `AUDIT_MAX_ITERATIONS` (default 12),
-focus via `AUDIT_RUBRIC`.
+`audit:live` writes each run to `docs/releases/v0.6/runs/` — or wherever
+`AUDIT_RECORDS_DIR` points, so a run is filed under the release that produced it — and the
+record is evidence rather than terminal scrollback. Step budget via `AUDIT_MAX_ITERATIONS`
+(default 12), token budget via `AUDIT_MAX_TOKENS`, focus via `AUDIT_RUBRIC`. The script
+prints the directory it is about to audit before spending anything.
+
+```sh
+pnpm score:runs     # score recorded runs offline; spends nothing
+```
 
 `probe:agent` runs two stages, cheapest risk first:
 

@@ -4,12 +4,21 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 to v0.7-007 are complete. The release is ready to close, and closing it is unauthorized.
+Status: **Released 2026-09-18.** [RELEASE.md](releases/v0.7/RELEASE.md) ·
+[REVIEW.md](releases/v0.7/REVIEW.md) · [RUNS.md](releases/v0.7/RUNS.md)
 
-Current task: none active.
+Current task: none active. v0.8 — Verification is planned and unauthorized.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## What v0.7 leaves behind
+
+An instrument. `pnpm score:runs` reads every recorded run and reports one of three things
+about each: a scorecard, unlabeled, or unscoreable. A committed baseline fails the build when
+the scoring code moves. And one scored run, so the next one has something to be compared to.
+
+It made the agent no better. It made it possible to tell.
 
 ## v0.7-007 — the paid run, and what it answered
 
@@ -236,7 +245,7 @@ on a copy, not by assuming.
 **The target is excluded from Prettier and ESLint.** A formatter would change bytes the key
 has fingerprinted; a linter would report the planted answers as errors and fail the gate.
 
-**57 new tests**, 805 in total.
+**59 new tests**, 805 in total.
 
 ## v0.7-001 — the run record becomes readable
 
@@ -313,18 +322,22 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**Closing v0.7.** All seven milestones are done. Closing needs a RELEASE.md, a
-`/claims-audit`, and a decision on three things run 12 surfaced:
+**v0.8 — Verification** is the next scheduled release: a checker that compares a claim
+against its evidence, because citation is not support. It is the release evaluation was built
+to make judgeable — without a baseline there would be no way to show a verifier helped.
 
-1. **`report-finding` cannot replace a finding**, so an agent obeying the citation
-   instruction produces duplicates instead of corrections. This is the sharpest finding of
-   the release, and it is a tool defect rather than a prompt one.
-2. **The run record cannot say what it audited, what it read, or why it failed.** Three
-   gaps, all the same shape.
-3. **Recall of 2/7 is confounded with the budget.** One higher-budget run would separate
-   "cannot find" from "ran out of money". It costs money.
+Before it, four things run 12 left open. None is started, and the first is the one that
+matters:
 
-None of these is started.
+1. **`report-finding` cannot replace a finding.** An agent obeying the citation instruction
+   produces duplicates instead of corrections, so the report gets worse for following
+   instructions. A tool defect, not a prompt one, and small.
+2. **The run record cannot say what it audited, what it read, or why it failed.** Three gaps
+   of one shape. The first is why `--target` scoring scores unrelated runs.
+3. **One higher-budget run** would separate "cannot find" from "ran out of money". It spends
+   money, so it is a decision rather than a task.
+4. **A second target** would show whether any of this generalises. One target measures one
+   task.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a

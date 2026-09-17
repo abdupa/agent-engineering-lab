@@ -15,7 +15,14 @@ A roadmap entry is not authorization. [CURRENT.md](CURRENT.md) names what is act
 | v0.4    | Orchestration state machine, checkpoint / restore / resume, intentional pause                       | foundation for #12               |
 | v0.5    | Chunking, lexical + semantic retrieval, context assembly, grounded generation, retrieval evaluation | #4 Knowledge Retrieval (partial) |
 
-468 tests across 25 suites. 16 ADRs. See [docs/releases/](releases/).
+## Delivered here
+
+| Release | Delivered                                                                                                 | Patterns                                 |
+| ------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| v0.6    | A working audit agent behind `POST /audit`; the runtime hardening that getting it working required        | #1, #10 applied to a real task           |
+| v0.7    | Evaluation: labeled target, matching rule, metrics, labels, a baseline the suite enforces, one scored run | none — the instrument the rest depend on |
+
+939 tests across 48 suites. 17 ADRs. See [docs/releases/](releases/).
 
 ## Scheduled
 
@@ -28,20 +35,18 @@ side is exactly the check nobody performs twice.
 
 | #   | Release                        | Pattern                      | The requirement that earns it                                                                |
 | --- | ------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| 1   | **v0.6 — First agent**         | #1, #10 applied              | An auditor needs findings on a codebase without reading every file by hand.                  |
-| 2   | **v0.7 — Evaluation**          | —                            | Quality regresses silently when a prompt or model changes. Catch it before a reviewer does.  |
-| 3   | **v0.8 — Verification**        | #8 Verification & Validation | An answer cites its evidence and is still wrong. Citation is not support.                    |
-| 4   | **v0.9 — Second agent**        | #5, #4 extended              | A reviewer needs the risky clauses in a contract, with the clause text attached.             |
-| 5   | **v1.0 — Async execution**     | #12 (part 1)                 | A job runs for minutes. Submit and be notified; no held connection.                          |
-| 6   | **v1.1 — Guardrails & HITL**   | #12 (part 2), #23 folded in  | Nothing reaches a client without a human approving it.                                       |
-| 7   | **v1.2 — Memory**              | #3 Memory-Augmented          | A reviewer returning next week gets an agent that already knows their constraints.           |
-| 8   | **v1.3 — Planning**            | #2 Planning                  | Work needs more than one tool call, and a bad plan wastes time and money.                    |
-| 9   | **v1.4 — Code execution**      | #7 Data Analysis             | A question needs computation over data, not retrieval of prose.                              |
-| 10  | **v1.5 — Compliance / policy** | #14 Compliance / Security    | Output must satisfy a written policy before it is allowed to leave.                          |
-| 11  | **v1.6 — Explainability**      | #24 Explainable              | A reviewer must audit why the agent concluded what it concluded.                             |
-| 12  | **v1.7 — Operator console**    | —                            | Someone must watch runs, approve the gates v1.1 created, and debug a failure.                |
-| 13  | **v1.8 — TDD code generation** | #13 Code-Generation          | The agent writes code, and the only trustworthy correction signal is a failing test.         |
-| 14  | **v2.0 — Extraction**          | —                            | Patterns that proved themselves in production become reusable deliberately, not by accident. |
+| 1   | **v0.8 — Verification**        | #8 Verification & Validation | An answer cites its evidence and is still wrong. Citation is not support.                    |
+| 2   | **v0.9 — Second agent**        | #5, #4 extended              | A reviewer needs the risky clauses in a contract, with the clause text attached.             |
+| 3   | **v1.0 — Async execution**     | #12 (part 1)                 | A job runs for minutes. Submit and be notified; no held connection.                          |
+| 4   | **v1.1 — Guardrails & HITL**   | #12 (part 2), #23 folded in  | Nothing reaches a client without a human approving it.                                       |
+| 5   | **v1.2 — Memory**              | #3 Memory-Augmented          | A reviewer returning next week gets an agent that already knows their constraints.           |
+| 6   | **v1.3 — Planning**            | #2 Planning                  | Work needs more than one tool call, and a bad plan wastes time and money.                    |
+| 7   | **v1.4 — Code execution**      | #7 Data Analysis             | A question needs computation over data, not retrieval of prose.                              |
+| 8   | **v1.5 — Compliance / policy** | #14 Compliance / Security    | Output must satisfy a written policy before it is allowed to leave.                          |
+| 9   | **v1.6 — Explainability**      | #24 Explainable              | A reviewer must audit why the agent concluded what it concluded.                             |
+| 10  | **v1.7 — Operator console**    | —                            | Someone must watch runs, approve the gates v1.1 created, and debug a failure.                |
+| 11  | **v1.8 — TDD code generation** | #13 Code-Generation          | The agent writes code, and the only trustworthy correction signal is a failing test.         |
+| 12  | **v2.0 — Extraction**          | —                            | Patterns that proved themselves in production become reusable deliberately, not by accident. |
 
 ### Reordered 2026-09-17, by evidence
 
@@ -108,9 +113,14 @@ firing, or record _"still not triggered"_. Never leave a gate to silence.
 | 11  | Chain-of-Agents Orchestrator | v0.7 evaluation shows a routed pipeline beats one agent with tools on a real task          |
 | 29  | Collective Intelligence      | Same instrument, same bar — debate or weighted voting measurably wins                      |
 | 15  | Self-Improving               | A working regression harness exists, so policy changes can be measured rather than trusted |
-| 16  | Conversational               | The product acquires a conversational surface                                              |
-| 19  | Vision-Language              | The product must read screenshots, diagrams or scanned layout                              |
-| 20  | Audio Processing             | A named requirement for speech input                                                       |
+
+**Reviewed at the v0.7 boundary: none fired.** The closest is #15 — the harness now exists and
+the gate detects regressions in the _scorer_, but an agent changing its own policy needs its
+live behaviour measured, and that costs a paid run every time. Necessary, not sufficient.
+Recorded in full in [v0.7/RELEASE.md](releases/v0.7/RELEASE.md).
+| 16 | Conversational | The product acquires a conversational surface |
+| 19 | Vision-Language | The product must read screenshots, diagrams or scanned layout |
+| 20 | Audio Processing | A named requirement for speech input |
 
 ## Not building
 

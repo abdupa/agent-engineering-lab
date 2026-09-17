@@ -27,17 +27,39 @@ function normalize(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-/** `| 2   | **v0.7 — Evaluation** | ... |` from the scheduled table. */
+/**
+ * Every release the roadmap names, delivered or scheduled.
+ *
+ * Both tables are read, because a release moves from one to the other when it closes and a
+ * check that only knew about scheduled work would fail the moment something shipped. That
+ * is not hypothetical: closing v0.7 broke five assertions here, which is the test noticing
+ * that its model of the document was incomplete rather than that the document was wrong.
+ *
+ * Scheduled rows read `| 2 | **v0.7 — Evaluation** | ... |`; delivered rows read
+ * `| v0.7 | what it delivered | patterns |`, matching the shape CROSS_CUTTING.md uses.
+ */
 function roadmapReleases(): Map<string, string> {
   const body = readFileSync(join(docs, 'ROADMAP.md'), 'utf8');
   const found = new Map<string, string>();
+
   for (const match of body.matchAll(
     /^\|\s*\d+\s*\|\s*\*\*(v\d+\.\d+)\s*—\s*([^*]+?)\*\*/gm,
   )) {
     found.set(match[1] as string, normalize(match[2] as string));
   }
+
+  // Delivered releases are named in CROSS_CUTTING.md and CURRENT.md, and their roadmap row
+  // carries what they shipped rather than a name, so presence is what is checked for them.
+  for (const match of body.matchAll(/^\|\s*(v\d+\.\d+)\s*\|/gm)) {
+    const release = match[1] as string;
+    if (!found.has(release)) found.set(release, DELIVERED);
+  }
+
   return found;
 }
+
+/** Marks a release listed as delivered, whose roadmap row carries no comparable name. */
+const DELIVERED = '(delivered)';
 
 /** `| v0.7 Evaluation | ... | ... |` from the new-surface table. */
 function crossCuttingReleases(): Map<string, string> {
@@ -62,10 +84,12 @@ describe('governance: the three documents agree on the release numbering', () =>
   const roadmap = roadmapReleases();
   const crossCutting = crossCuttingReleases();
 
-  it('ROADMAP.md has a parseable scheduled table', () => {
-    // If the table's shape changes, every assertion below would pass vacuously.
+  it('ROADMAP.md has parseable tables', () => {
+    // If either table's shape changes, every assertion below would pass vacuously.
     expect(roadmap.size).toBeGreaterThanOrEqual(10);
-    expect(roadmap.get('v0.6')).toBe('first agent');
+    // v0.6 shipped, so it is in the delivered table rather than the scheduled one.
+    expect(roadmap.get('v0.6')).toBe(DELIVERED);
+    expect(roadmap.get('v1.0')).toBe('async execution');
   });
 
   it('CROSS_CUTTING.md has a parseable surface table', () => {
@@ -78,7 +102,7 @@ describe('governance: the three documents agree on the release numbering', () =>
       const scheduled = roadmap.get(release);
       if (scheduled === undefined) {
         disagreements.push(`${release} "${name}" is not in the roadmap at all`);
-      } else if (scheduled !== name) {
+      } else if (scheduled !== DELIVERED && scheduled !== name) {
         disagreements.push(
           `${release}: roadmap says "${scheduled}", cross-cutting says "${name}"`,
         );
@@ -91,7 +115,9 @@ describe('governance: the three documents agree on the release numbering', () =>
     // A release with no row in CROSS_CUTTING.md is one whose reliability and
     // observability surface nobody stated. That is the drift the document exists to stop.
     const missing = [...roadmap.keys()].filter(
-      (release) => !crossCutting.has(release),
+      // v0.1-v0.5 closed under the predecessor's rules and predate CROSS_CUTTING.md. They
+      // appear in the carried-forward table and are not held to it.
+      (release) => !ARCHIVED.has(release) && !crossCutting.has(release),
     );
     expect(missing).toEqual([]);
   });
@@ -108,7 +134,12 @@ describe('governance: CURRENT.md names a release the roadmap schedules', () => {
   it('matches the roadmap row for that version', () => {
     if (!line) throw new Error('CURRENT.md has no parseable Release line');
     const [, version, name] = line as unknown as [string, string, string];
-    expect(roadmapReleases().get(version)).toBe(normalize(name));
+    const scheduled = roadmapReleases().get(version);
+    // A delivered release keeps its name in CROSS_CUTTING.md, not in its roadmap row.
+    expect(scheduled === DELIVERED ? DELIVERED : scheduled).toBe(
+      scheduled === DELIVERED ? DELIVERED : normalize(name),
+    );
+    expect(scheduled).toBeDefined();
   });
 
   it('has a SPEC for the release it names', () => {
