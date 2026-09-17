@@ -3,3 +3,8 @@ dist/
 coverage/
 pnpm-lock.yaml
 docs/releases/v0.6/runs/
+
+# Evaluation targets are data, not source. Their defects are planted deliberately and their
+# exact bytes are recorded in the answer key, so reformatting one silently invalidates the
+# key that makes it scoreable.
+docs/eval/targets/

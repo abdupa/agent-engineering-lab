@@ -4,7 +4,17 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/node_modules/**',
+      // Evaluation targets contain deliberate defects. Linting them would report the
+      // planted answers as errors and fail the gate, and any autofix would change bytes
+      // the answer key has hashed.
+      'docs/eval/targets/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

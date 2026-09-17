@@ -4,12 +4,34 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 is complete. v0.7-002 is next and unauthorized.
+Status: **In progress.** v0.7-001 and v0.7-002 are complete. v0.7-003 is next and unauthorized.
 
 Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-002 — a target with a known answer
+
+`docs/eval/targets/small-service/` is six TypeScript files written for evaluation. Four
+carry seven planted defects; two are controls containing none, so a false positive is
+measurable at all. Severity is spread on purpose — four high, two medium, one low — because
+run 11 rated everything high and a key that did the same could not have caught it.
+
+**The key sits outside the audited tree.** An agent pointed at this target reads `src/`, and
+a key stored inside it would be a file the agent could open. That would make every score
+taken afterwards worthless while nothing looked wrong.
+
+**The key hashes every file.** A stale key is the quietest failure this design has: line
+numbers stay valid-looking after an edit, so scoring would carry on producing confident
+numbers for a measurement that had stopped being real. Editing a file, deleting one, adding
+an unkeyed one and moving a line number each fail a test — each proved by making the change
+on a copy, not by assuming.
+
+**The target is excluded from Prettier and ESLint.** A formatter would change bytes the key
+has fingerprinted; a linter would report the planted answers as errors and fail the gate.
+
+**57 new tests**, 805 in total.
 
 ## v0.7-001 — the run record becomes readable
 
@@ -86,10 +108,14 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7-002 — the answer key and the first labeled target.** Not started. A fixture tree
-with real-looking defects, clean files that contain none, and per-file content hashes so a
-target that drifts from its key fails loudly instead of scoring line numbers that no longer
-mean anything.
+**v0.7-003 — the matching rule.** Not started. One documented rule deciding when a finding
+matches a keyed defect and what "unkeyed" means, with tests for the exact line, a line
+inside a keyed span, adjacent but outside, right file with the wrong line, right line in the
+wrong file, and two findings claiming the same defect.
+
+It is the decision the scores rest on. A rule that is too generous makes a vague agent look
+accurate; one that is too strict makes a correct finding look wrong for citing line 21
+instead of 20.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a

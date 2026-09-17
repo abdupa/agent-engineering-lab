@@ -1,0 +1,105 @@
+{
+  "target": "small-service",
+  "version": 1,
+  "createdAt": "2026-09-17",
+  "tree": "src",
+  "exhaustive": true,
+  "description": "A small TypeScript service written for evaluation. Seven defects were planted deliberately across four files, and two files are controls containing none. Every line was written for this purpose, which is what makes the key exhaustive: there is nothing here that somebody else wrote and nobody has read.",
+  "files": [
+    {
+      "path": "config.ts",
+      "sha256": "d65fc3eae325b17a5f346c5238b56413db4e7b647e09969a3dbd9489e69f3853",
+      "expected": "defects"
+    },
+    {
+      "path": "db.ts",
+      "sha256": "fa9896f35ae5f47251106e969085bde74b5e6a73f7af60c78cea5fa1baab3679",
+      "expected": "defects"
+    },
+    {
+      "path": "files.ts",
+      "sha256": "5dbb4e75f8d79c4e859c3874d9532845d82ab1aa304a8be09435f092bef7223b",
+      "expected": "defects"
+    },
+    {
+      "path": "session.ts",
+      "sha256": "e0ea39efcdcc4130008e499164841953e47f80cc44b8e6b5c9b7f5f4c217f686",
+      "expected": "defects"
+    },
+    {
+      "path": "format.ts",
+      "sha256": "e2a21623562ea76e47cd646dd610ec62deddf9cab3165dbb80fa1ac96ddc3fd2",
+      "expected": "clean"
+    },
+    {
+      "path": "health.ts",
+      "sha256": "0cae1a91b15cdc1e7abc35cdcda0565599d714ab5eefd631b0da71f77e909097",
+      "expected": "clean"
+    }
+  ],
+  "defects": [
+    {
+      "id": "SS-001",
+      "path": "config.ts",
+      "line": 19,
+      "endLine": 19,
+      "severity": "high",
+      "summary": "A live API key is hardcoded as a fallback credential",
+      "why": "STAGING_REPORTING_KEY holds a real-looking secret in source, and loadConfig falls back to it whenever REPORTING_API_KEY is unset. Anyone with read access to the repository has the credential, and rotating it requires a code change and a deploy. The value names itself as a production credential rather than a test one. UNSET_KEY_NOTICE on line 16 is a decoy: it is named like a credential and is only help text."
+    },
+    {
+      "id": "SS-002",
+      "path": "db.ts",
+      "line": 20,
+      "endLine": 22,
+      "severity": "high",
+      "summary": "SQL is built by interpolating an email address from the request",
+      "why": "findByEmail places the caller's email directly inside a string literal in the query. An email containing a single quote changes the statement, which is SQL injection against the user table. The same file shows the correct approach twice: listByRole and recordLogin both pass $1 with a parameter array, which is what makes this one an oversight rather than a house style."
+    },
+    {
+      "id": "SS-003",
+      "path": "files.ts",
+      "line": 11,
+      "endLine": 13,
+      "severity": "high",
+      "summary": "An attachment name from the request is joined to the root with no confinement check",
+      "why": "read joins the caller-supplied name onto the storage root and opens whatever comes out. A name of ../../etc/passwd resolves outside the root, so any file the process can read is reachable. path.join normalizes the traversal rather than rejecting it, which is why the code looks safe at a glance. Nothing resolves the real path or checks that it stays inside the root."
+    },
+    {
+      "id": "SS-004",
+      "path": "files.ts",
+      "line": 20,
+      "endLine": 22,
+      "severity": "medium",
+      "summary": "write returns true from its catch block, reporting success after a failure",
+      "why": "The method's contract is to report whether the attachment was written. The catch returns true, so a full disk, a permission error or a missing directory is reported to the caller as a successful write. The data is lost and nothing upstream can tell. Medium rather than high because it destroys data quietly rather than exposing it."
+    },
+    {
+      "id": "SS-005",
+      "path": "session.ts",
+      "line": 10,
+      "endLine": 12,
+      "severity": "high",
+      "summary": "Session tokens are generated with Math.random",
+      "why": "newToken builds the token from Math.random and the current time. Math.random is not a cryptographic generator: its output is predictable from observed values, and the timestamp half is guessable outright. An attacker who can predict a token holds a valid session for another user. The fix is randomBytes from node:crypto, which is the same amount of code."
+    },
+    {
+      "id": "SS-006",
+      "path": "session.ts",
+      "line": 17,
+      "endLine": 22,
+      "severity": "medium",
+      "summary": "The doc comment claims a validation step that open does not perform",
+      "why": "The comment states that the user identifier is validated against the account store before a session is issued, and that a token can never be minted for an account that does not exist. open does no such check: it takes the string it is given and mints a session. A reader auditing the caller trusts the comment and stops looking, which is what makes a false comment worse than no comment."
+    },
+    {
+      "id": "SS-007",
+      "path": "db.ts",
+      "line": 35,
+      "endLine": 37,
+      "severity": "low",
+      "summary": "recordLogin issues an update without awaiting it",
+      "why": "The call is not awaited, so the method resolves before the write completes and a rejection becomes an unhandled promise rejection rather than a caught error. Deliberately low: last_login is not load-bearing, the realistic consequence is an occasionally missing timestamp, and the method's own comment says a missing timestamp is not worth failing on. A finding that rates this high is inflating severity."
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: In progress. v0.7-001 complete; v0.7-002 not started.
+Status: In progress. v0.7-001 and v0.7-002 complete; v0.7-003 not started.
 
 ## The product requirement that earns this release
 
@@ -29,8 +29,9 @@ trigger, so until it exists none of them can fire on evidence rather than on app
 ## Architecture direction
 
 ```text
-docs/eval/targets/<name>/        a fixture tree, with defects and clean files
-docs/eval/targets/<name>/KEY.md  the answer key: file, line span, severity, why
+docs/eval/targets/<name>/README.md  what the target is, and not to repair it
+docs/eval/targets/<name>/key.json   the answer key: file, span, severity, why, hashes
+docs/eval/targets/<name>/src/       the audited tree — the only part the agent sees
 docs/eval/labels/<runId>.json    hand labels for runs against unlabeled code
 
 apps/api/src/evaluation/
@@ -161,6 +162,39 @@ that the scorer can tell.
 
 v0.7-007 is last deliberately. Everything before it is free, and a live run spent before
 the scorer exists produces another anecdote.
+
+### The key lives outside the tree it describes
+
+The architecture sketch above originally put the key beside the fixture files. It is a
+sibling of the audited tree instead, because an agent pointed at a target reads that tree,
+and a key stored inside it is a file the agent can open. Every score taken afterwards would
+be worthless and nothing would look wrong.
+
+The same reasoning put `README.md` outside `src/` and kept both out of the keyed file list.
+
+### The target is excluded from the repository's own tooling
+
+Prettier would reformat the fixture, which changes bytes the key has hashed and turns the
+target unscoreable. ESLint would report the planted defects as errors and fail the gate.
+Both exclusions are recorded where they are made, since a future reader finding an
+un-linted directory deserves the reason rather than a mystery.
+
+### What v0.7-002 produced
+
+`small-service`: six TypeScript files, four carrying seven planted defects and two kept
+clean as controls. Severity is spread four high, two medium, one low, deliberately — run 11
+rated everything high, and a key that was also all-high could not have measured that. SS-007
+is a missing `await` on a `last_login` timestamp and is keyed low; a finding that rates it
+high is inflating, and now that is a number rather than an opinion.
+
+One decoy is planted. `UNSET_KEY_NOTICE` in `config.ts` is named like a credential and is
+only help text, sitting three lines above the real hardcoded key.
+
+The key records a SHA-256 of every file. A stale key is the quietest failure available to
+this design — line numbers stay valid-looking after an edit, so scoring would continue and
+report confident numbers for a measurement that had stopped being real. Editing a file,
+deleting one, adding an unkeyed one, or moving a line number each fail a test, proved by
+making each change on a copy rather than by assertion.
 
 ### What v0.7-001 found in the stored records
 
