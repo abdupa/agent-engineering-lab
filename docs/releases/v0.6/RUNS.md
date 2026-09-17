@@ -4,6 +4,78 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 11 — it works, and the findings are mediocre
+
+Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments · 20 steps / 60,000 tokens
+
+**Outcome: `BUDGET_EXCEEDED` after 13 iterations and 12 tool calls. Three findings
+recorded and kept.**
+
+```
+list → read ×5 → report → read → report → read → report → read(fail) → [budget]
+```
+
+### The machinery is fixed
+
+No unparseable output at any step. `report-finding` succeeded three times. Every defect
+from runs 5-10 is gone, and the end-to-end harness built before this run predicted it
+correctly.
+
+### The budget fired in production, for the first time
+
+68,157 tokens against a 60,000 ceiling — a 13% overshoot, which is the documented
+behaviour rather than a bug: the guard stops the _next_ call, not the one that crossed
+the line. It ended a run that had already spent 66k input tokens on a 13-file directory
+and was still reading.
+
+Partial results survived: three findings returned with the failure stated.
+
+### The findings, checked line by line
+
+| Finding                        | Cited                                          | What is actually there                                                     | Verdict                             |
+| ------------------------------ | ---------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------- |
+| `read-file.tool.ts:35`         | resolve-then-open race                         | `const absolute = await workspace.resolveExisting(path);`                  | **Correct**                         |
+| `grep.tool.ts:67`              | "joins the path directly instead of resolving" | `if (buffer.subarray(0, 4096).includes(0)) continue;` — the NUL-byte check | **Wrong line.** The join is line 65 |
+| `report-finding.tool.ts:51-54` | resolve-then-open race                         | the `citedLines` guard — _between_ the resolve at 50 and the open at 55    | **Wrong span**                      |
+
+**One accurate citation in three.**
+
+All three are the same observation — time-of-check/time-of-use between `realpath` and
+`open` — applied to three files and rated `high` each time. The class is technically
+real. The threat model is an attacker who can already write symlinks into the codebase
+you chose to audit, which buys them little they could not get by editing the files
+directly. High severity is wrong by about two notches.
+
+No invented paths, no invented evidence, every cited file real. And nothing specific to
+this code that a pattern-matcher could not have produced.
+
+### What this is worth
+
+Compared with run 5, which found two genuine defects in the confinement boundary, this is
+a weaker result on a larger budget. One run is not a trend and neither is two; that is
+the point.
+
+**This is the concrete requirement for the next two releases**, arrived at by evidence
+rather than by a roadmap:
+
+- **Evaluation.** Is one accurate citation in three good or bad? There is no baseline,
+  no way to tell whether a prompt change improves it, and no way to notice if it degrades.
+- **Verification.** Nothing checks that the quoted evidence supports the claim. A checker
+  comparing the two would have caught two of these three, and it is the single highest-value
+  thing left.
+
+Worth noting that the evidence-by-reference design is what made the mismatch visible at
+all. Had the model quoted its own evidence it would have quoted the line it meant, and
+the citation would have looked correct while pointing somewhere else.
+
+### Measurements
+
+68,157 tokens over 13 calls. 58 seconds. Input grew 848 → 8,353. No transport timeouts.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T08-25-45-162Z.json`
+
+---
+
 ## Run 10 — the sample, and the cause. It was never escaping.
 
 Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments ON · debug sample ON

@@ -1,0 +1,44 @@
+{
+  "runId": "3437b196-86a6-47a9-bd96-29e2229d697f",
+  "startedAt": "2026-09-17T08:25:45.162Z",
+  "model": "gpt-5.6-luna",
+  "maxIterations": 20,
+  "maxTokens": 60000,
+  "typedArguments": true,
+  "rubric": "(default)",
+  "outcome": "BUDGET_EXCEEDED",
+  "toolCalls": 12,
+  "usage": {
+    "calls": 13,
+    "inputTokens": 66423,
+    "outputTokens": 1734,
+    "totalTokens": 68157
+  },
+  "summary": "Audit did not complete (BUDGET_EXCEEDED). 3 finding(s) recorded before the failure.",
+  "findings": [
+    {
+      "path": "read-file.tool.ts",
+      "line": 35,
+      "endLine": 35,
+      "severity": "high",
+      "claim": "The file is resolved and checked before opening, but the path is opened later by name; an attacker who can replace the file or directory entry in between can race this check and cause the tool to read a different file, potentially outside the workspace.",
+      "evidence": "      const absolute = await workspace.resolveExisting(path);"
+    },
+    {
+      "path": "grep.tool.ts",
+      "line": 67,
+      "endLine": 67,
+      "severity": "high",
+      "claim": "Grep reads each discovered path by joining it directly to the workspace root instead of resolving and revalidating it through Workspace; a path can be swapped after the walk, allowing the search to read an unintended file or follow an escaping symlink.",
+      "evidence": "        if (buffer.subarray(0, 4096).includes(0)) continue;"
+    },
+    {
+      "path": "report-finding.tool.ts",
+      "line": 51,
+      "endLine": 54,
+      "severity": "high",
+      "claim": "The cited file is resolved and validated before it is opened, but the later open by pathname is vulnerable to a time-of-check/time-of-use race; a concurrent replacement can cause evidence to be read from a different file than the one validated.",
+      "evidence": "\n  const cited = citedLines(request);\n  if (cited.line === undefined) return undefined;\n"
+    }
+  ]
+}

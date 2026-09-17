@@ -1,6 +1,7 @@
 # v0.6 — First agent
 
-Status: **Released with one exit criterion unmet.** Stated below rather than glossed.
+Status: **Released.** V0.6-004 was outstanding at closure and is now met — see
+_The outstanding criterion, since met_ below.
 
 The requirement that earned it: _an auditor needs findings on a codebase without reading
 every file by hand._
