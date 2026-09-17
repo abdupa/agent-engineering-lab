@@ -4,13 +4,48 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **Specified, not started.** [SPEC.md](releases/v0.7/SPEC.md) is written and no
-milestone has begun. A SPEC is a plan, not progress.
+Status: **In progress.** v0.7-001 is complete. v0.7-002 is next and unauthorized.
 
-Current task: none active. v0.7-001 is next and unauthorized.
+Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-001 — the run record becomes readable
+
+The nine live runs v0.6 paid for were written to disk and never read back. They are now
+parsed by a schema, and a record that will not parse reports **why** rather than reporting
+zero. The distinction is the whole point: a corrupt file and a run that genuinely found
+nothing are different facts, and an evaluation that writes both down as `0` is lying
+quietly.
+
+Four reasons are separated — unreadable file, empty file, unparseable JSON, and a shape the
+schema refuses — and a failure names the field path and the issue code without ever
+repeating a value from the record. Findings hold source code and a description of its
+weaknesses, so a diagnostic that helpfully echoed the bad field would put both in a log.
+
+**64 tests.** 48 against hand-written records, 16 against the real corpus.
+
+### What reading the corpus revealed
+
+**The format already changed once.** Four of nine records predate both the token budget and
+the typed transport and carry neither field. A schema written from the newest record alone
+would have rejected almost half the evidence, and the obvious conclusion — that the files
+were broken — would have been wrong.
+
+**The corpus holds four findings, not seven.** Three of the seven hand-checked in RUNS.md
+are in no file: two came from a probe script that writes no record, and one was lost in
+transit. The SPEC has been corrected, and the count is now asserted by a test.
+
+**A record cannot say why a run failed.** Run 9 was a configuration fault that never
+reached the network, and the file says `DECISION_FAILED` — the same word a run of confused
+model output gets. The only clue left is `usage.calls: 0`. Pinned by a test, not fixed;
+fixing it changes the record contract and needs its own task.
+
+**One defect, found by the tests.** The loader read the system error code behind
+`error instanceof Error`, which is false inside the test runner because Node builds
+filesystem errors in a different realm. A missing file reported `unknown`. It would have
+worked in a normal process, which is how that class of defect survives until it matters.
 
 ## What v0.6 delivered
 
@@ -51,9 +86,10 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7 — Evaluation.** Specified on 2026-09-17, not started. Reordered ahead of the second
-agent after run 11 recorded three findings with one accurate citation among them, and
-nothing in the repository could say whether that is good.
+**v0.7-002 — the answer key and the first labeled target.** Not started. A fixture tree
+with real-looking defects, clean files that contain none, and per-file content hashes so a
+target that drifts from its key fails loudly instead of scoring line numbers that no longer
+mean anything.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a

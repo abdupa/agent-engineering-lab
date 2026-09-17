@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: Planned. Nothing implemented.
+Status: In progress. v0.7-001 complete; v0.7-002 not started.
 
 ## The product requirement that earns this release
 
@@ -155,12 +155,33 @@ that the scorer can tell.
 | v0.7-002 | Answer-key format and the first labeled target: real-looking defects, **plus clean files that contain none**, with per-file content hashes.                                      | Key parses; hashes match; the control files are listed in the key as expected-empty.                                                        |
 | v0.7-003 | Matching rule. One documented rule deciding when a finding matches a keyed defect, and what "unkeyed" means.                                                                     | Tests for exact line, line inside a keyed span, adjacent-but-outside, right file wrong line, right line wrong file, and duplicate findings. |
 | v0.7-004 | Metrics over (record, key): precision, recall, citation accuracy, severity agreement, duplicate-claim rate, tokens per finding, findings per 10k tokens. Pure functions, no I/O. | Hand-computed expected values on synthetic records. Denominators reported beside every rate, so 1/1 never prints as 100%.                   |
-| v0.7-005 | `scripts/score-run.ts` and a hand-label form for runs against unlabeled code, so the seven findings already checked in RUNS.md become data instead of prose.                     | Scorecards written for all nine stored records; the three that produced findings carry hand labels.                                         |
+| v0.7-005 | `scripts/score-run.ts` and a hand-label form for runs against unlabeled code, so the four findings stored in records become data instead of prose.                               | Scorecards written for all nine stored records; the two that produced findings carry hand labels.                                           |
 | v0.7-006 | Baseline and regression gate in the suite.                                                                                                                                       | A committed baseline file; the gate fails when a scorecard drops below it; a test proves the gate fails, rather than asserting it passes.   |
 | v0.7-007 | **One live run against the labeled target.** The only paid step, and the first number that describes the current agent rather than a stored one.                                 | Recorded in `docs/releases/v0.7/RUNS.md` with its scorecard, and the prompt changes from 2026-09-17 finally have a measurement beside them. |
 
 v0.7-007 is last deliberately. Everything before it is free, and a live run spent before
 the scorer exists produces another anecdote.
+
+### What v0.7-001 found in the stored records
+
+Two things, both of which change what the later milestones may assume.
+
+**The corpus holds four findings, not seven.** RUNS.md hand-checks seven, and three of
+those are not in any file. Two came from run 2, which used the probe script and writes no
+record. One is run 5's symlink finding, which was lost in transit and survives only as
+prose. The starting dataset is therefore four findings across two runs out of nine, and
+`test/evaluation/stored-records.spec.ts` asserts those numbers so the size of the input is
+a test rather than a sentence.
+
+**A record cannot say why a run failed.** RUNS.md records run 9 as a `CONFIGURATION`
+failure that never reached the network. The stored record says `DECISION_FAILED`, because
+the runner wraps the provider's code before the script writes it down. A configuration bug
+that cost nothing and a model producing ten confused steps are the same word in the file,
+and the only surviving clue is that `usage.calls` is zero.
+
+That loss is pinned by a test rather than fixed here. Fixing it changes what
+`live-audit.ts` writes, which is a change to the record contract and belongs in its own
+task with its own reasoning about old records.
 
 ## Evaluation
 
