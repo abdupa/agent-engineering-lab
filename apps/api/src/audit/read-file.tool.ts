@@ -1,4 +1,4 @@
-import { readFile, stat } from 'node:fs/promises';
+import { open, stat } from 'node:fs/promises';
 import { z } from 'zod';
 import type { Tool } from '../tools/tool';
 import { WorkspaceDenied } from './workspace';
@@ -36,8 +36,22 @@ export function createReadFileTool(
       const info = await stat(absolute);
       if (!info.isFile()) throw new WorkspaceDenied('NOT_FOUND');
 
-      const buffer = await readFile(absolute);
-      const slice = buffer.subarray(0, maxBytes);
+      // Read at most the budget, rather than reading the whole file and slicing it
+      // afterwards. Slicing bounds what is returned; it does nothing about what was
+      // pulled into memory first, so a large file defeated the budget entirely.
+      const handle = await open(absolute, 'r');
+      let slice: Buffer;
+      try {
+        // Allocate for the smaller of the budget and the file, so a tiny file behind a
+        // large budget does not reserve the budget anyway.
+        const want = Math.min(maxBytes, info.size);
+        const buffer = Buffer.alloc(want);
+        const { bytesRead } = await handle.read(buffer, 0, want, 0);
+        slice = buffer.subarray(0, bytesRead);
+      } finally {
+        await handle.close();
+      }
+
       // A NUL byte in the first slice is the cheap, deterministic binary test. It is a
       // heuristic: a binary file without one early would still decode to nonsense.
       if (slice.includes(0)) throw new WorkspaceDenied('EXCLUDED');
@@ -45,8 +59,9 @@ export function createReadFileTool(
       return {
         path: workspace.relativize(absolute),
         content: slice.toString('utf8'),
-        bytes: buffer.byteLength,
-        truncated: buffer.byteLength > slice.byteLength,
+        // The file's real size, from stat — still honest about what was not read.
+        bytes: info.size,
+        truncated: info.size > slice.byteLength,
       };
     },
   };

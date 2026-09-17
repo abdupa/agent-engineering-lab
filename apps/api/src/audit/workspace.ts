@@ -85,8 +85,11 @@ export class Workspace {
   }
 
   /**
-   * Confines, then resolves symlinks and confines again. A link inside the root that
-   * points outside it is the escape lexical checking cannot see.
+   * Confines, then resolves symlinks and re-applies both checks to the real path.
+   *
+   * Two escapes hide behind a symlink, and lexical checking sees neither: a link that
+   * points outside the root, and a link that stays inside it but lands on an excluded
+   * file. The second was found by the audit agent reading this file.
    */
   async resolveExisting(relativePath: string): Promise<string> {
     const resolved = this.resolve(relativePath);
@@ -98,6 +101,12 @@ export class Workspace {
     }
     if (!this.contains(real)) {
       throw new WorkspaceDenied('OUTSIDE_ROOT');
+    }
+    // Exclusion has to survive symlink resolution. Checking only the supplied name let
+    // an innocuous path like docs/config resolve to .env: the lexical check saw nothing
+    // excluded, and the containment check saw a path inside the root. Both passed.
+    if (this.isExcluded(this.relativize(real))) {
+      throw new WorkspaceDenied('EXCLUDED');
     }
     return real;
   }

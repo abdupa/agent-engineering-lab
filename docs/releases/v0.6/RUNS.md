@@ -4,6 +4,85 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 5 — the agent found two real defects in this codebase
+
+Date: 2026-09-17 · `gpt-5.6-luna` · `apps/api/src/audit` · cap 12 · debug sampling on
+
+**Outcome: `DECISION_FAILED` at step 6. One finding recorded, one lost in transit.
+Both were real.**
+
+```
+list-files → read → read → report-finding ✓ → read → [report-finding] ✗ unparseable_json
+```
+
+### Finding 1, recorded
+
+> `read-file.tool.ts:31` — loads the entire file into memory before applying `maxBytes`,
+> so an untrusted path can trigger excessive memory use despite the advertised budget.
+> Evidence: `const buffer = await readFile(absolute);`
+
+**Correct.** The budget bounded what was returned, never what was read. A 2 MB file behind
+a 1 KB budget allocated 2 MB. Fixed by reading through a file handle for
+`min(maxBytes, size)` bytes, with `bytes` still reported from `stat` so the response stays
+honest about what it did not read.
+
+### Finding 2, lost to the encoding bug
+
+The failing payload was legible in the debug sample:
+
+> `workspace.ts:81` — symlink resolution can bypass the exclusion checks. `resolveExisting`
+> tests `isExcluded` only against the caller's lexical path, then accepts any real path
+> that stays inside the workspace.
+
+**Also correct, and the more serious of the two.** A symlink named `docs/config` pointing
+at `.env` passed both existing checks: the lexical name is not excluded, and the real path
+is inside the root. `read-file` would have returned the secret.
+
+The existing suite tested a symlink pointing **outside** the root and never one pointing at
+an excluded file **inside** it. Fixed by re-applying exclusion to the resolved real path.
+
+Five tests now cover both defects, written to fail first.
+
+### The encoding bug is confirmed
+
+```
+reason: unparseable_json   outputTextLength: 978   endsWithBrace: true
+quoteCount: 68             backslashCount: 46
+```
+
+Not truncation. The output was complete and would not parse. The sample shows why:
+
+```
+{"decision":{"type":"tool_call","toolName":"report-finding",
+ "argumentsJson":"{\"path\":\"workspace.ts\",\"line\":81,...
+```
+
+`argumentsJson` carries JSON inside a JSON string — the v0.3-002 workaround for Structured
+Outputs not accepting arbitrary objects. A finding's `evidence` holds source code, so the
+model must double-escape quotes, braces and newlines. On a long finding it miscounts, and
+one under-escaped quote breaks the **outer** envelope. The quote arithmetic agrees: 68
+quotes against 46 backslashes leaves several unaccounted for.
+
+**This is not an audit-agent problem.** It affects any tool on this runtime whose arguments
+carry text with quotes in it.
+
+### What this establishes, and what it does not
+
+The agent reads real code and produces correct, specific, evidence-backed findings —
+including one in the security boundary of the very file it was reading. Two for two on
+this run, both verified by hand and now covered by tests.
+
+It does not establish a hit rate: two findings is not a sample. Nothing was measured about
+what it missed, and the run did not finish.
+
+### Measurements
+
+14,196 tokens. 20.9s for six steps. Input grew 586 → 4,044.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T03-45-53-483Z.json`
+
+---
+
 ## Run 4 — the prompt fix worked, and exposed the real bug
 
 Date: 2026-09-16 · `gpt-5.6-luna` · same target · cap 12
