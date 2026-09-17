@@ -78,6 +78,20 @@ async function main(): Promise<void> {
       ...(MAX_TOKENS === undefined ? {} : { maxTokens: MAX_TOKENS }),
     });
 
+    // Printed before anything is spent. Both of these are easy to drop from a
+    // copy-pasted command, and a run with the wrong transport looks identical until
+    // you read the backslash count in a failure log.
+    console.log(
+      [
+        '',
+        `  transport ......... ${typedArguments ? 'TYPED arguments' : 'JSON-string arguments (AGENT_TYPED_ARGUMENTS=1 to switch)'}`,
+        `  step budget ....... ${MAX_ITERATIONS}`,
+        `  token budget ...... ${MAX_TOKENS ?? 'unbounded (set AUDIT_MAX_TOKENS)'}`,
+        `  invalid-output sample ${process.env.PROVIDER_DEBUG_INVALID_OUTPUT === '1' ? 'ON' : 'off (PROVIDER_DEBUG_INVALID_OUTPUT=1 to enable)'}`,
+        '',
+      ].join('\n'),
+    );
+
     const runId = randomUUID();
     const startedAt = new Date().toISOString();
     const rubric = process.env.AUDIT_RUBRIC?.trim();

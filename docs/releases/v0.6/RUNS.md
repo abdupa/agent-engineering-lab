@@ -4,6 +4,37 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 8 — the string transport, by accident, and a second data point
+
+Date: 2026-09-17 · `gpt-5.6-luna` · **typed arguments OFF** · cap 20 steps / 60,000 tokens
+
+`AGENT_TYPED_ARGUMENTS=1` and `PROVIDER_DEBUG_INVALID_OUTPUT=1` were dropped from the
+command, so this ran the old transport with no debug sample. It answers nothing that was
+open, but it is not worthless.
+
+|                  | Run 7 (typed) | Run 8 (string) |
+| ---------------- | ------------- | -------------- |
+| outputTextLength | 194           | 223            |
+| quoteCount       | 28            | 44             |
+| backslashCount   | **0**         | **16**         |
+
+A correct string payload of that size needs roughly 22 escapes; 16 were present. **Second
+independent confirmation that the string transport under-escapes**, and the two signatures
+are clearly distinguishable — zero backslashes is the typed path, a shortfall of
+backslashes is the string path.
+
+Failed identically otherwise: `DECISION_FAILED` at step 6, zero findings, 18,502 tokens.
+One transport timeout recovered on retry, as in run 7.
+
+**Fixed in response:** the script now prints its transport, both budgets and the debug
+flag before spending anything. A run with the wrong transport looked identical to a
+correct one until someone read a backslash count in a failure log, which is too late and
+costs a run.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T07-31-45-009Z.json`
+
+---
+
 ## Run 7 — the typed transport works. Three new things, one still broken.
 
 Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments ON · cap 20 steps / 60,000 tokens

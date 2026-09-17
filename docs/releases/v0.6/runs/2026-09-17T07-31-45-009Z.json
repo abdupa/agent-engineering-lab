@@ -1,0 +1,19 @@
+{
+  "runId": "4016c201-a840-43e6-898a-4c562ab6e25d",
+  "startedAt": "2026-09-17T07:31:45.009Z",
+  "model": "gpt-5.6-luna",
+  "maxIterations": 20,
+  "maxTokens": 60000,
+  "typedArguments": false,
+  "rubric": "(default)",
+  "outcome": "DECISION_FAILED",
+  "toolCalls": 5,
+  "usage": {
+    "calls": 6,
+    "inputTokens": 17774,
+    "outputTokens": 728,
+    "totalTokens": 18502
+  },
+  "summary": "Audit did not complete (DECISION_FAILED). 0 finding(s) recorded before the failure.",
+  "findings": []
+}
