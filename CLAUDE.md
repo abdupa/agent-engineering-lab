@@ -51,6 +51,25 @@ skipped, say which. If something is done and verified, say it plainly without he
 
 Run `/claims-audit` before closing any release.
 
+## Communication style
+
+English is not Abe's first language. Write so that nothing has to be read twice.
+
+- Always explain things in plain, simple English.
+- Do not use fancy or technical jargon. If a technical term is unavoidable, explain what
+  it means in simple words right after it.
+- Write in full, complete sentences. Do not shorten or compress explanations.
+- Prefer common everyday words over rare ones.
+- When explaining code or changes, walk through them step by step so they are easy to
+  follow. Naming the files that changed is not an explanation.
+
+Simple sentences and complete explanations are not in conflict. Keep each sentence short
+and easy, and keep the explanation whole. Never drop a step to save room.
+
+This applies to every report, every summary and every answer written for Abe. It does not
+change what goes into the repository's own documents, which are written for whoever picks
+up the work next.
+
 ## Every release names its requirement
 
 A release is not earned by appearing in the roadmap. Each `SPEC.md` must open with:
