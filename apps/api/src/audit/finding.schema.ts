@@ -27,6 +27,19 @@ export const FindingRequestSchema = z
     endLine: z.number().int().positive().nullable().optional(),
     severity: z.enum(SEVERITIES),
     claim: z.string().trim().min(1).max(500),
+    /**
+     * The id of a finding this one corrects, or null for a new finding.
+     *
+     * Run 12 is why this exists. Told to check what its citation landed on and re-report
+     * with a corrected line, the agent did exactly that — the same defect at line 26, then
+     * 22, then 21, converging on the right one. The tool could only append, so obeying the
+     * instruction produced one defect reported three times with two wrong citations still
+     * attached, and the report was worse for the agent having done what it was asked.
+     *
+     * Nullable rather than merely optional for the reason recorded on `line`: strict
+     * Structured Outputs requires every property to be present.
+     */
+    replaces: z.string().trim().min(1).max(40).nullable().optional(),
   })
   .refine((finding) => finding.endLine == null || finding.line != null, {
     message: 'endLine requires line',

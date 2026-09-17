@@ -443,6 +443,20 @@ describe('the rubric', () => {
     expect(state.goal).toContain('corrected line');
   });
 
+  it('tells the agent how to correct one, not just to try again', async () => {
+    /**
+     * Run 12 obeyed the instruction above and the report got worse: three findings for
+     * one defect, two of them citing lines the claim was not about. The instruction was
+     * right and the tool could only append. Now it can replace, and the goal has to say
+     * so or the agent will keep doing what it did.
+     */
+    const { audit, seen } = service([finish('Done.')]);
+    await audit.audit(workspace);
+    const state = seen[0] as { goal: string };
+    expect(state.goal).toContain('findingId');
+    expect(state.goal).toContain('replaces set to that findingId');
+  });
+
   it('tells the agent what severity means and not to repeat a claim', async () => {
     // Also from run 11: the same observation reported against three files, high each
     // time, for something needing an attacker with write access already.

@@ -12,6 +12,33 @@ Current task: none active. v0.8 — Verification is planned and unauthorized.
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
 
+## Since the release — findings can now be corrected
+
+`report-finding` gains `replaces` and returns a `findingId`.
+[ADR-018](adr/ADR-018-correctable-findings.md).
+
+Run 12 obeyed the instruction to check its citations and the report got worse for it: one
+defect at line 26, then 22, then 21 — converging on exactly the right line — and all three
+kept, because the tool could only append. An agent that ignored the instruction produced a
+cleaner report than one that followed it. That is a contract defect, not a prompt problem.
+
+A call with `replaces` set to a known id overwrites that finding in place, keeping its id and
+its position. A correction is the same finding said better, so it does not become a second
+entry. An unknown id fails the call rather than quietly appending, because appending a
+finding the agent asked to replace is the exact defect being fixed.
+
+**Automatic merging was rejected.** Deduplicating on path and claim text would have fixed run
+12 with no schema change and no cooperation from the model, but it makes deterministic code
+decide which findings are _the same_ — a judgement, not a validation — and it would silently
+collapse one genuine claim made about two different locations.
+
+The goal now tells the agent to use it, so the two instructions that contradicted each other
+can both be obeyed.
+
+**Unverified live.** Run 12 proves the defect is real; nothing yet shows the model will reach
+for `replaces` when offered it. 14 new tests, including run 12's three-call sequence now
+producing one finding. **953 tests, 49 suites.**
+
 ## What v0.7 leaves behind
 
 An instrument. `pnpm score:runs` reads every recorded run and reports one of three things
@@ -329,9 +356,9 @@ to make judgeable — without a baseline there would be no way to show a verifie
 Before it, four things run 12 left open. None is started, and the first is the one that
 matters:
 
-1. **`report-finding` cannot replace a finding.** An agent obeying the citation instruction
-   produces duplicates instead of corrections, so the report gets worse for following
-   instructions. A tool defect, not a prompt one, and small.
+1. ~~**`report-finding` cannot replace a finding.**~~ **Done**, see above and
+   [ADR-018](adr/ADR-018-correctable-findings.md). Unverified live: nothing yet shows the
+   model will use it.
 2. **The run record cannot say what it audited, what it read, or why it failed.** Three gaps
    of one shape. The first is why `--target` scoring scores unrelated runs.
 3. **One higher-budget run** would separate "cannot find" from "ran out of money". It spends

@@ -38,7 +38,7 @@ generation and citation integrity. That inheritance was 468 tests across 25 suit
 Built here: a working audit agent behind `POST /audit` (v0.6), and an evaluation harness
 that can say how well it did (v0.7).
 
-**939 tests across 48 suites. 17 ADRs.** Two catalogue patterns complete (#1 Autonomous
+**953 tests across 49 suites. 18 ADRs.** Two catalogue patterns complete (#1 Autonomous
 Decision-Making, #10 Tool-Using), one partial (#4 Knowledge Retrieval). v0.7 advances no
 catalogue pattern: evaluation is the instrument the later ones depend on, not a pattern
 itself.
