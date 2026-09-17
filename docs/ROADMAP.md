@@ -19,18 +19,21 @@ A roadmap entry is not authorization. [CURRENT.md](CURRENT.md) names what is act
 
 ## Scheduled
 
-Renumbered 2026-09-17. The table previously listed v0.6 as Memory while the SPEC and
-CURRENT had already moved it to the first agent — drift left behind when that pivot
-happened, and caught by reading the two side by side.
+Renumbered twice on 2026-09-17, both times to close the same gap. First the table listed
+v0.6 as Memory while the SPEC and CURRENT had already moved it to the first agent. Then
+the reorder below was written as prose and the table underneath it was left alone, so the
+note and the rows it described disagreed for one commit. A governance test now compares
+this table against CROSS_CUTTING.md and CURRENT.md, because reading two documents side by
+side is exactly the check nobody performs twice.
 
 | #   | Release                        | Pattern                      | The requirement that earns it                                                                |
 | --- | ------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | 1   | **v0.6 — First agent**         | #1, #10 applied              | An auditor needs findings on a codebase without reading every file by hand.                  |
-| 2   | **v0.7 — Second agent**        | #5, #4 extended              | A reviewer needs the risky clauses in a contract, with the clause text attached.             |
-| 3   | **v0.8 — Async execution**     | #12 (part 1)                 | A job runs for minutes. Submit and be notified; no held connection.                          |
-| 4   | **v0.9 — Guardrails & HITL**   | #12 (part 2), #23 folded in  | Nothing reaches a client without a human approving it.                                       |
-| 5   | **v1.0 — Evaluation**          | —                            | Quality regresses silently when a prompt or model changes. Catch it before users do.         |
-| 6   | **v1.1 — Verification**        | #8 Verification & Validation | An answer cites its evidence and is still wrong. Citation is not support.                    |
+| 2   | **v0.7 — Evaluation**          | —                            | Quality regresses silently when a prompt or model changes. Catch it before a reviewer does.  |
+| 3   | **v0.8 — Verification**        | #8 Verification & Validation | An answer cites its evidence and is still wrong. Citation is not support.                    |
+| 4   | **v0.9 — Second agent**        | #5, #4 extended              | A reviewer needs the risky clauses in a contract, with the clause text attached.             |
+| 5   | **v1.0 — Async execution**     | #12 (part 1)                 | A job runs for minutes. Submit and be notified; no held connection.                          |
+| 6   | **v1.1 — Guardrails & HITL**   | #12 (part 2), #23 folded in  | Nothing reaches a client without a human approving it.                                       |
 | 7   | **v1.2 — Memory**              | #3 Memory-Augmented          | A reviewer returning next week gets an agent that already knows their constraints.           |
 | 8   | **v1.3 — Planning**            | #2 Planning                  | Work needs more than one tool call, and a bad plan wastes time and money.                    |
 | 9   | **v1.4 — Code execution**      | #7 Data Analysis             | A question needs computation over data, not retrieval of prose.                              |
@@ -76,7 +79,7 @@ async       ──before──►  anything long    a five-minute job cannot hol
 Reliability and observability are not rows in this table because they are obligations of
 **all** of them. Each release states its failure policy and what it emits, per
 [CROSS_CUTTING.md](CROSS_CUTTING.md) — which also names the specific new surface each of
-these introduces. Async execution (v0.8) and code execution (v1.3) are far larger jumps
+these introduces. Async execution (v1.0) and code execution (v1.4) are far larger jumps
 than their one-line requirements suggest.
 
 The predecessor repository did this by giving every layer its own instrumentation
@@ -84,15 +87,15 @@ milestone. Same obligation here, enforced through the SPEC instead of the schedu
 
 ### Ordering notes
 
-**Evaluation (v1.0) sits deliberately early.** It is the instrument every later decision
+**Evaluation (v0.7) sits deliberately early.** It is the instrument every later decision
 depends on — whether verification helps, whether multi-agent wins, whether a change made
 things worse. Building it late means guessing until then.
 
 **Verification follows evaluation** because you cannot tell whether a verifier helps
 without a way to measure. Order matters here more than anywhere else in the plan.
 
-**Guardrails precede everything with consequences.** Code execution (v1.3) and TDD
-generation (v1.7) both run untrusted work; neither ships before the approval boundary
+**Guardrails precede everything with consequences.** Code execution (v1.4) and TDD
+generation (v1.8) both run untrusted work; neither ships before the approval boundary
 exists.
 
 ## Gated
@@ -102,7 +105,7 @@ firing, or record _"still not triggered"_. Never leave a gate to silence.
 
 | #   | Pattern                      | Trigger                                                                                    |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------ |
-| 11  | Chain-of-Agents Orchestrator | v1.0 evaluation shows a routed pipeline beats one agent with tools on a real task          |
+| 11  | Chain-of-Agents Orchestrator | v0.7 evaluation shows a routed pipeline beats one agent with tools on a real task          |
 | 29  | Collective Intelligence      | Same instrument, same bar — debate or weighted voting measurably wins                      |
 | 15  | Self-Improving               | A working regression harness exists, so policy changes can be measured rather than trusted |
 | 16  | Conversational               | The product acquires a conversational surface                                              |

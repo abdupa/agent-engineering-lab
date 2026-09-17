@@ -2,12 +2,15 @@
 
 Project: Agent Engineering Lab
 
-Release: v0.6 — First agent
+Release: v0.7 — Evaluation
 
-Status: **Released** with one exit criterion unmet, stated in
-[RELEASE.md](releases/v0.6/RELEASE.md)
+Status: **Specified, not started.** [SPEC.md](releases/v0.7/SPEC.md) is written and no
+milestone has begun. A SPEC is a plan, not progress.
 
-Current task: none active. v0.7 is planned and not started.
+Current task: none active. v0.7-001 is next and unauthorized.
+
+v0.6 is **Released** with one exit criterion unmet, stated in
+[RELEASE.md](releases/v0.6/RELEASE.md).
 
 ## What v0.6 delivered
 
@@ -48,14 +51,19 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7 — Evaluation.** Not started. Reordered ahead of the second agent after run 11
-recorded three findings with one accurate citation among them, and nothing in the
-repository could say whether that is good.
+**v0.7 — Evaluation.** Specified on 2026-09-17, not started. Reordered ahead of the second
+agent after run 11 recorded three findings with one accurate citation among them, and
+nothing in the repository could say whether that is good.
 
-The inputs already exist: eleven recorded runs, each with its findings and hand-checked
-citations. What is missing is a labeled set, metrics that mean something — citation
-accuracy, claim/evidence agreement, findings per ten thousand tokens — and a gate that
-notices a regression.
+Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
+target with clean control files, a documented matching rule, pure metric functions, a
+scorecard script, and a regression gate. The seventh is one live run against the labeled
+target — the first number that describes the agent as it is now rather than as it was
+stored.
+
+The inputs are thinner than they look. Eleven recorded runs, but only three produced
+findings anyone checked: two planted in a fixture, two real, and three mediocre. Seven
+findings is three anecdotes, not a dataset, so most of v0.7 is construction.
 
 **v0.8 — Verification** follows it, because a checker that compares a claim against its
 evidence would have caught two of run 11's three, and without a baseline there is no way

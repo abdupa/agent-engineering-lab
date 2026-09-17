@@ -44,7 +44,7 @@ These are separate things and get confused constantly.
 | **auditability**   | a third party can verify after the fact that policy was followed         |
 
 Different audiences, different artifacts. Pattern #24 Explainable is on the roadmap
-(v1.5); it does **not** discharge the observability obligation for any other pattern.
+(v1.6); it does **not** discharge the observability obligation for any other pattern.
 
 And for failure handling, extending the v0.4 chain
 (`checkpoint ≠ restore ≠ resume ≠ retry`):
@@ -110,22 +110,30 @@ tracing.
 
 ## What each scheduled pattern newly introduces
 
-Not boilerplate. Each of these is a genuinely new surface.
+Not boilerplate. Each of these is a genuinely new surface. Document intelligence appeared
+in an earlier version of this table and has never been a scheduled release; it is gone
+rather than silently carried.
 
-| Release                    | New reliability surface                                                                                                                     | New observability surface                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| v0.6 Memory                | Stale records; a read that returns nothing                                                                                                  | Selection hit/miss, category, record count — **never content**. Memory may hold user data.  |
-| v0.7 Planning              | A planner that replans forever                                                                                                              | Replan count, plan depth, abandoned branches                                                |
-| v0.8 Async                 | **The largest jump.** At-least-once vs at-most-once, retry across a process boundary, poison jobs, step timeout vs job timeout, dead letter | Queue depth, job age, attempt number, terminal disposition                                  |
-| v0.9 Guardrails & HITL     | An approval nobody ever answers; escalation timeout                                                                                         | Approval latency, denied actions, pending age                                               |
-| v1.0 Evaluation            | Judge unavailable mid-run                                                                                                                   | **Cost and latency per run become first-class.** Partly an observability release by nature. |
-| v1.1 Verification          | Verifier unavailable — **fail open or fail closed is a safety decision, not a default**                                                     | Verification outcomes, disagreement rate against the generator                              |
-| v1.2 Document intelligence | Malformed input, partial extraction, OCR that silently degrades                                                                             | Extraction confidence, pages failed, fields missing                                         |
-| v1.3 Code execution        | **Highest-risk surface in the plan.** Resource limits, OOM, runaway process, non-terminating code, sandbox escape                           | Execution duration, memory ceiling hit, exit status, output truncation                      |
-| v1.4 Compliance            | Policy engine unavailable; an unevaluable policy                                                                                            | Policy decisions with the rule that fired — this is auditability, not logging               |
-| v1.5 Explainability        | —                                                                                                                                           | The pattern itself, for reviewers rather than operators                                     |
-| v1.6 Console               | —                                                                                                                                           | Where all of the above finally becomes visible to a human                                   |
-| v1.7 TDD codegen           | Infinite correction loops; tests that pass for the wrong reason                                                                             | Iterations to green, tests added vs modified                                                |
+Release names and numbers here must match the scheduled table in [ROADMAP.md](ROADMAP.md);
+a governance test fails the build if they drift apart, which they had done for two releases
+before anyone read the two tables side by side.
+
+| Release                  | New reliability surface                                                                                                                     | New observability surface                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| v0.6 First agent         | Model-proposed paths; confinement; a run that fails after recording findings                                                                | Per-step decisions, tool outcomes, token usage, the run record itself                                                 |
+| v0.7 Evaluation          | A record that will not parse; a key that no longer matches its target — **unscoreable must not report as zero**                             | **Cost and latency per run become first-class.** Partly an observability release by nature.                           |
+| v0.8 Verification        | Verifier unavailable — **fail open or fail closed is a safety decision, not a default**                                                     | Verification outcomes, disagreement rate against the generator                                                        |
+| v0.9 Second agent        | A second domain on shared machinery; whatever the first agent's fixes did not generalize                                                    | The same surface as v0.6, and whether it transferred without new code                                                 |
+| v1.0 Async execution     | **The largest jump.** At-least-once vs at-most-once, retry across a process boundary, poison jobs, step timeout vs job timeout, dead letter | Queue depth, job age, attempt number, terminal disposition                                                            |
+| v1.1 Guardrails & HITL   | An approval nobody ever answers; escalation timeout                                                                                         | Approval latency, denied actions, pending age                                                                         |
+| v1.2 Memory              | Stale records; a read that returns nothing                                                                                                  | Selection hit/miss, category, record count — **never content**. Memory may hold user data.                            |
+| v1.3 Planning            | A planner that replans forever                                                                                                              | Replan count, plan depth, abandoned branches                                                                          |
+| v1.4 Code execution      | **Highest-risk surface in the plan.** Resource limits, OOM, runaway process, non-terminating code, sandbox escape                           | Execution duration, memory ceiling hit, exit status, output truncation                                                |
+| v1.5 Compliance / policy | Policy engine unavailable; an unevaluable policy                                                                                            | Policy decisions with the rule that fired — this is auditability, not logging                                         |
+| v1.6 Explainability      | —                                                                                                                                           | The pattern itself, for reviewers rather than operators                                                               |
+| v1.7 Operator console    | —                                                                                                                                           | Where all of the above finally becomes visible to a human                                                             |
+| v1.8 TDD code generation | Infinite correction loops; tests that pass for the wrong reason                                                                             | Iterations to green, tests added vs modified                                                                          |
+| v2.0 Extraction          | — moving code adds no runtime surface. The obligation is that every extracted pattern keeps the reliability policy it shipped with          | — nothing new. A pattern that loses its instrumentation on the way into a package was not extracted, it was rewritten |
 
 ## Test fidelity is a reliability concern
 
