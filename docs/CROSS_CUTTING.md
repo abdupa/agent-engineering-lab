@@ -127,6 +127,30 @@ Not boilerplate. Each of these is a genuinely new surface.
 | v1.6 Console               | —                                                                                                                                           | Where all of the above finally becomes visible to a human                                   |
 | v1.7 TDD codegen           | Infinite correction loops; tests that pass for the wrong reason                                                                             | Iterations to green, tests added vs modified                                                |
 
+## Test fidelity is a reliability concern
+
+Four defects reached paid runs in a row — a schema that would not convert, a synchronous
+parse of an async schema, a refinement that killed the decision instead of the call, and
+`output_text` concatenating duplicate parts. Every one lived in the same place: the
+**text → JSON.parse → schema** path.
+
+None of the existing fakes exercised it. They all handed the system a pre-built object,
+which skips exactly that stretch of code. The tests were thorough and the wrong shape.
+
+`test/audit-end-to-end.spec.ts` closes it: real workspace, real tools, real registry and
+executor, real agent loop, real provider, and a fake `fetch` returning real Responses API
+bodies. A full audit runs to `finish` with a finding, and each of the four defects is
+reproduced as a case.
+
+**The rule: a fake belongs as far down the stack as it can go.** A fake at the model
+boundary tests everything above it; a fake at the decision boundary tests almost nothing
+of the provider. Cost is the reason this matters — a defect above the fake fails in a
+test run, a defect below it fails in a paid one.
+
+What this still cannot catch: what a real model chooses to do, and any provider behaviour
+the fake does not simulate. Those need live runs, and live runs should be spent on those
+questions rather than on wiring.
+
 ## The honest limit
 
 None of this proves the system is reliable. It establishes that failure modes were named
