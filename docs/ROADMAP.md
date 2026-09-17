@@ -22,7 +22,7 @@ A roadmap entry is not authorization. [CURRENT.md](CURRENT.md) names what is act
 | v0.6    | A working audit agent behind `POST /audit`; the runtime hardening that getting it working required        | #1, #10 applied to a real task           |
 | v0.7    | Evaluation: labeled target, matching rule, metrics, labels, a baseline the suite enforces, one scored run | none — the instrument the rest depend on |
 
-939 tests across 48 suites. 17 ADRs. See [docs/releases/](releases/).
+953 tests across 49 suites. 18 ADRs. See [docs/releases/](releases/).
 
 ## Scheduled
 
