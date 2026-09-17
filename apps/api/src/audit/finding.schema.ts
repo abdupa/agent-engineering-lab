@@ -16,26 +16,40 @@ export const SEVERITIES = ['high', 'medium', 'low'] as const;
 export const FindingRequestSchema = z
   .object({
     path: z.string().trim().min(1).max(400),
-    /** Omit for a file-level claim that names no single line. */
-    line: z.number().int().positive().optional(),
-    /** Inclusive end of a span. Defaults to `line` when omitted. */
-    endLine: z.number().int().positive().optional(),
+    /**
+     * Null or omitted for a file-level claim that names no single line.
+     *
+     * Nullable rather than merely optional because strict Structured Outputs requires
+     * every property to be present: `.optional()` alone is rejected by the API, which
+     * an offline schema check caught before it reached a live call.
+     */
+    line: z.number().int().positive().nullable().optional(),
+    /** Inclusive end of a span. Defaults to `line` when absent. */
+    endLine: z.number().int().positive().nullable().optional(),
     severity: z.enum(SEVERITIES),
     claim: z.string().trim().min(1).max(500),
   })
-  .refine(
-    (finding) => finding.endLine === undefined || finding.line !== undefined,
-    {
-      message: 'endLine requires line',
-    },
-  )
+  .refine((finding) => finding.endLine == null || finding.line != null, {
+    message: 'endLine requires line',
+  })
   .refine(
     (finding) =>
-      finding.endLine === undefined ||
-      finding.line === undefined ||
+      finding.endLine == null ||
+      finding.line == null ||
       finding.endLine >= finding.line,
     { message: 'endLine must not precede line' },
   );
+
+/** Null and absent mean the same thing here; the recorded Finding carries neither. */
+export function citedLines(request: FindingRequest): {
+  line?: number;
+  endLine?: number;
+} {
+  return {
+    ...(request.line == null ? {} : { line: request.line }),
+    ...(request.endLine == null ? {} : { endLine: request.endLine }),
+  };
+}
 
 export type FindingRequest = z.infer<typeof FindingRequestSchema>;
 

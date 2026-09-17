@@ -1,7 +1,7 @@
 import { open } from 'node:fs/promises';
 import { z } from 'zod';
 import type { Tool } from '../tools/tool';
-import { createLocatedFindingSchema } from './finding.schema';
+import { citedLines, createLocatedFindingSchema } from './finding.schema';
 import type { Finding, FindingRequest } from './finding.schema';
 import type { Workspace } from './workspace';
 
@@ -45,7 +45,8 @@ async function readCitedLines(
   workspace: Workspace,
   request: FindingRequest,
 ): Promise<string | undefined> {
-  if (request.line === undefined) return undefined;
+  const cited = citedLines(request);
+  if (cited.line === undefined) return undefined;
 
   const absolute = await workspace.resolveExisting(request.path);
   const handle = await open(absolute, 'r');
@@ -59,18 +60,20 @@ async function readCitedLines(
   }
 
   const lines = text.split('\n');
-  if (request.line > lines.length) {
+  if (cited.line > lines.length) {
     // Citing a line that is not there is a defect in the finding, not evidence of one.
     throw new Error('Cited line is beyond the end of the file');
   }
 
   const end = Math.min(
-    request.endLine ?? request.line,
+    cited.endLine ?? cited.line,
     lines.length,
-    request.line + MAX_EVIDENCE_LINES - 1,
+    cited.line + MAX_EVIDENCE_LINES - 1,
   );
-  const cited = lines.slice(request.line - 1, end).join('\n');
-  return cited.slice(0, MAX_EVIDENCE_CHARS);
+  return lines
+    .slice(cited.line - 1, end)
+    .join('\n')
+    .slice(0, MAX_EVIDENCE_CHARS);
 }
 
 /**
@@ -95,7 +98,11 @@ export function createReportFindingTool(
     execute: async (request) => {
       const evidence = await readCitedLines(workspace, request);
       const total = collector.add({
-        ...request,
+        path: request.path,
+        severity: request.severity,
+        claim: request.claim,
+        // Null is normalized away: a recorded Finding carries a line or nothing.
+        ...citedLines(request),
         ...(evidence === undefined ? {} : { evidence }),
       });
       return {

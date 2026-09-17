@@ -66,6 +66,7 @@ async function main(): Promise<void> {
     // Built from the container's decision service rather than the container's audit
     // service, so this script can set its own step budget without reaching into
     // anything private.
+    const typedArguments = process.env.AGENT_TYPED_ARGUMENTS === '1';
     const service = new AuditService(app.get(AgentDecisionService), {
       maxIterations: MAX_ITERATIONS,
       timeoutMs: 300_000,
@@ -105,6 +106,7 @@ async function main(): Promise<void> {
           startedAt,
           model: process.env.OPENAI_MODEL,
           maxIterations: MAX_ITERATIONS,
+          typedArguments,
           rubric: rubric ?? '(default)',
           outcome: failure ? failure.code : 'complete',
           toolCalls: report.toolCalls,

@@ -122,7 +122,13 @@ export class AuditService {
     try {
       const run = await runner.run(
         { goal: buildGoal(rubric), observations: [] },
-        registry.list().map(({ name, description }) => ({ name, description })),
+        // Schemas travel with the descriptions so the decision service can offer typed
+        // arguments. They are never serialized into the model input.
+        registry.list().map(({ name, description, inputSchema }) => ({
+          name,
+          description,
+          inputSchema,
+        })),
         {
           permissions: { grantedPermissions: [...AUDIT_PERMISSIONS] },
           ...(this.options.signal ? { signal: this.options.signal } : {}),
