@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: In progress. v0.7-001 to v0.7-005 complete; v0.7-006 not started.
+Status: In progress. v0.7-001 to v0.7-006 complete; v0.7-007 — the live run — not started.
 
 ## The product requirement that earns this release
 
@@ -178,6 +178,46 @@ Prettier would reformat the fixture, which changes bytes the key has hashed and 
 target unscoreable. ESLint would report the planted defects as errors and fail the gate.
 Both exclusions are recorded where they are made, since a future reader finding an
 un-linted directory deserves the reason rather than a mystery.
+
+### The gate, and why it pins exactly rather than setting a floor
+
+The stored records never change and the labels are reviewed like fixtures, so a score is a
+pure function of those two and the scoring code. **Any** difference therefore means the code
+changed, and `docs/eval/baseline.json` pins exact values rather than a floor.
+
+An improvement fails the gate too. Nothing here can tell a better rule from a looser one, so
+both arrive as "this changed, say why", and the reason ends up in a commit message instead
+of nowhere. Regenerating is a deliberate act behind `--update-baseline`, never a side effect
+of looking at the numbers — a baseline that rewrote itself would agree with whatever the
+code currently does, which is the one thing a baseline must never do.
+
+Rates are stored as fractions and compared as integers. No float is ever compared, which
+removes a class of flakiness rather than managing it.
+
+#### Why a floor would not have worked, demonstrated
+
+`NEAR_MISS_LINES` was changed from 5 to 0 and the gate run:
+
+```text
+5 difference(s) from the committed baseline:
+  3437b196 precision: 2/3 -> n/a (changed)
+  3437b196 citationAccuracy: 2/3 -> 2/2 (better)
+  3437b196 ruleAgreement: 2/3 -> 1/3 (worse)
+  3437b196 outcomes.near_miss: 1 -> 0 (changed)
+  3437b196 outcomes.unkeyed: 0 -> 1 (changed)
+```
+
+**Citation accuracy improved**, from 2/3 to 2/2, while the agent got no better at all.
+Narrowing the window pushed the mislocated finding out of the denominator. A gate that only
+watched for numbers falling would have passed this change without comment — the instrument
+becoming more generous, reported as the agent becoming more accurate.
+
+`ruleAgreement` fell at the same time, because the rule now disagreed with the reader more
+often. That is the measure that noticed, and it is the reason the rule is compared against
+the person at all.
+
+The gate is also proved against a run disappearing from the corpus, which is how a test
+suite quietly stops testing anything.
 
 ### What v0.7-005 produced, and one thing it corrected
 

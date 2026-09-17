@@ -4,12 +4,56 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 to v0.7-005 are complete. v0.7-006 is next and unauthorized.
+Status: **In progress.** v0.7-001 to v0.7-006 are complete. v0.7-007 — the live run, the only paid step — is next and unauthorized.
 
 Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-006 — a change to the scoring now fails the build
+
+`docs/eval/baseline.json` holds what the scorer currently produces for the frozen corpus,
+and a test in the suite recomputes it on every run.
+
+It pins **exact** values rather than a floor. The stored records never change and the labels
+are reviewed like fixtures, so a score is a pure function of those two and the code. Any
+difference means the code changed. An improvement fails too, because nothing here can tell a
+better rule from a looser one — both arrive as "this changed, say why", and the reason ends
+up in a commit message instead of nowhere.
+
+### A floor would not have worked, and here is the proof
+
+I changed the near-miss window from 5 lines to 0 and ran the gate:
+
+```text
+5 difference(s) from the committed baseline:
+  3437b196 precision: 2/3 -> n/a (changed)
+  3437b196 citationAccuracy: 2/3 -> 2/2 (better)
+  3437b196 ruleAgreement: 2/3 -> 1/3 (worse)
+  3437b196 outcomes.near_miss: 1 -> 0 (changed)
+  3437b196 outcomes.unkeyed: 0 -> 1 (changed)
+```
+
+**Citation accuracy went up**, from 2/3 to 2/2, while the agent got no better. Narrowing the
+window pushed the mislocated finding out of the denominator. A gate that only watched for
+numbers falling would have waved this through: the instrument became more generous and it
+would have read as the agent becoming more accurate.
+
+`ruleAgreement` fell at the same moment, because the rule now disagreed with you more often.
+That is the measure that noticed, and it is why the rule is compared against the reader at
+all.
+
+The gate is also proved against a run vanishing from the corpus, which is how a test suite
+quietly stops testing anything.
+
+### What it does not protect
+
+**The live agent.** A prompt or model change moves no stored record, so this gate stays green
+through it. Catching that costs a live run. The alternative is a gate that spends money on
+every push, and that is a gate somebody eventually turns off.
+
+**14 new tests**, 939 in total.
 
 ## v0.7-005 — the analysis stops being prose
 
@@ -221,9 +265,12 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7-006 — the baseline and the regression gate.** Not started. A committed baseline the
-suite enforces, so a change that degrades citation accuracy fails the build instead of
-shipping quietly. The gate must be proved by watching it fail, not by watching it pass.
+**v0.7-007 — one live run against the labeled target.** Not started, and **the only step in
+this release that costs money.** Everything before it was free by design, so that a paid run
+is spent on the question nothing offline can answer: what the agent does now, including
+whether the three prompt changes from 2026-09-17 helped.
+
+It needs your go, because it spends tokens.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a
