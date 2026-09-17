@@ -1,12 +1,23 @@
+import { open } from 'node:fs/promises';
 import { z } from 'zod';
 import type { Tool } from '../tools/tool';
 import { createLocatedFindingSchema } from './finding.schema';
-import type { Finding } from './finding.schema';
+import type { Finding, FindingRequest } from './finding.schema';
 import type { Workspace } from './workspace';
+
+/** Bounded so a cited span cannot pull an arbitrary amount of a file into a finding. */
+const MAX_SCAN_BYTES = 262_144;
+const MAX_EVIDENCE_LINES = 20;
+const MAX_EVIDENCE_CHARS = 2_000;
 
 const outputSchema = z.object({
   recorded: z.literal(true),
   totalFindings: z.number().int().positive(),
+  /**
+   * Echoed back so the agent sees the text its citation actually resolved to. A line
+   * number off by three is visible immediately instead of silently misattributing.
+   */
+  evidence: z.string().optional(),
 });
 
 export type ReportFindingOutput = z.infer<typeof outputSchema>;
@@ -29,6 +40,39 @@ export class FindingCollector {
   }
 }
 
+/** Reads the cited lines from the file, so evidence comes from the source, not the model. */
+async function readCitedLines(
+  workspace: Workspace,
+  request: FindingRequest,
+): Promise<string | undefined> {
+  if (request.line === undefined) return undefined;
+
+  const absolute = await workspace.resolveExisting(request.path);
+  const handle = await open(absolute, 'r');
+  let text: string;
+  try {
+    const buffer = Buffer.alloc(MAX_SCAN_BYTES);
+    const { bytesRead } = await handle.read(buffer, 0, MAX_SCAN_BYTES, 0);
+    text = buffer.subarray(0, bytesRead).toString('utf8');
+  } finally {
+    await handle.close();
+  }
+
+  const lines = text.split('\n');
+  if (request.line > lines.length) {
+    // Citing a line that is not there is a defect in the finding, not evidence of one.
+    throw new Error('Cited line is beyond the end of the file');
+  }
+
+  const end = Math.min(
+    request.endLine ?? request.line,
+    lines.length,
+    request.line + MAX_EVIDENCE_LINES - 1,
+  );
+  const cited = lines.slice(request.line - 1, end).join('\n');
+  return cited.slice(0, MAX_EVIDENCE_CHARS);
+}
+
 /**
  * Structured emission through the controlled execution boundary, rather than asking the
  * model to encode a report inside its final text. Every recorded finding is therefore an
@@ -37,20 +81,28 @@ export class FindingCollector {
 export function createReportFindingTool(
   workspace: Workspace,
   collector: FindingCollector,
-): Tool<Finding, ReportFindingOutput> {
+): Tool<FindingRequest, ReportFindingOutput> {
   return {
     name: 'report-finding',
     description:
       'Record one audit finding. Arguments: path (file in the codebase), line (optional ' +
-      'line number), severity (high, medium or low), claim (what is wrong), evidence ' +
-      '(the exact text supporting the claim).',
+      'line number the claim is about), endLine (optional end of a span), severity ' +
+      '(high, medium or low), claim (what is wrong, in your own words). Do not send the ' +
+      'source text — the cited lines are read from the file and attached for you.',
     requiredPermissions: ['audit:report'],
     inputSchema: createLocatedFindingSchema(workspace),
     outputSchema,
-    execute: (finding) =>
-      Promise.resolve({
+    execute: async (request) => {
+      const evidence = await readCitedLines(workspace, request);
+      const total = collector.add({
+        ...request,
+        ...(evidence === undefined ? {} : { evidence }),
+      });
+      return {
         recorded: true as const,
-        totalFindings: collector.add(finding),
-      }),
+        totalFindings: total,
+        ...(evidence === undefined ? {} : { evidence }),
+      };
+    },
   };
 }

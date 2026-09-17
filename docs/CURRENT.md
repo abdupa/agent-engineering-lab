@@ -4,9 +4,9 @@ Project: Agent Engineering Lab
 
 Release: v0.6 — First agent: read-only codebase auditor
 
-Current task: V0.6-004 — Live run against a fixture, recorded
+Current task: V0.6-004 — Live runs against real code, recorded
 
-Status: Partially completed — fixture run done, real-codebase run outstanding
+Status: In progress — five runs recorded; encoding defect found and fixed, awaiting a completing run
 
 ## Delivered
 

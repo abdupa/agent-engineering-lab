@@ -38,7 +38,6 @@ const reportReadme = call('report-finding', {
   line: 1,
   severity: 'medium',
   claim: 'Readme documents no build step',
-  evidence: '# Fixture project',
 });
 
 /** Parsing the body validates the response contract instead of merely casting it. */
@@ -135,6 +134,7 @@ describe('POST /audit', () => {
           line: 1,
           severity: 'medium',
           claim: 'Readme documents no build step',
+          // Read from the fixture by the tool, not supplied in the request above.
           evidence: '# Fixture project',
         },
       ],

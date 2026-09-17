@@ -4,19 +4,53 @@ import type { Workspace } from './workspace';
 export const SEVERITIES = ['high', 'medium', 'low'] as const;
 
 /**
- * Structural contract only. A valid Finding proves the shape is right and the quoted
- * evidence is present as text — not that the claim follows from the evidence, and not
- * that the defect is real. Checking that is verification, which this release does not
- * contain.
+ * What the agent supplies: a location and a claim about it. Deliberately no evidence
+ * text.
+ *
+ * Asking a model to quote source code back meant carrying quotes, braces and newlines
+ * through `argumentsJson`, which encodes JSON inside a JSON string. On a long finding the
+ * escaping broke and the whole envelope became unparseable — observed on two live runs.
+ * Citing a line instead removes the class, and it removes a second problem with it:
+ * quoted evidence was whatever the model retyped, and nothing checked it against the file.
+ */
+export const FindingRequestSchema = z
+  .object({
+    path: z.string().trim().min(1).max(400),
+    /** Omit for a file-level claim that names no single line. */
+    line: z.number().int().positive().optional(),
+    /** Inclusive end of a span. Defaults to `line` when omitted. */
+    endLine: z.number().int().positive().optional(),
+    severity: z.enum(SEVERITIES),
+    claim: z.string().trim().min(1).max(500),
+  })
+  .refine(
+    (finding) => finding.endLine === undefined || finding.line !== undefined,
+    {
+      message: 'endLine requires line',
+    },
+  )
+  .refine(
+    (finding) =>
+      finding.endLine === undefined ||
+      finding.line === undefined ||
+      finding.endLine >= finding.line,
+    { message: 'endLine must not precede line' },
+  );
+
+export type FindingRequest = z.infer<typeof FindingRequestSchema>;
+
+/**
+ * What gets recorded. `evidence` is read from the file by the tool, never supplied by the
+ * model, so a cited line and its text cannot disagree.
  */
 export const FindingSchema = z.object({
-  /** Workspace-relative path. Never absolute, never traversing. */
   path: z.string().trim().min(1).max(400),
-  /** Omitted for file-level findings that name no single line. */
   line: z.number().int().positive().optional(),
+  endLine: z.number().int().positive().optional(),
   severity: z.enum(SEVERITIES),
   claim: z.string().trim().min(1).max(500),
-  evidence: z.string().trim().min(1).max(2000),
+  /** Absent for file-level findings, which cite no line to quote. */
+  evidence: z.string().optional(),
 });
 
 export type Finding = z.infer<typeof FindingSchema>;
@@ -31,16 +65,11 @@ export const AuditReportSchema = z.object({
 export type AuditReport = z.infer<typeof AuditReportSchema>;
 
 /**
- * Adds the workspace-dependent check: the cited file must actually exist inside the
- * audited tree. A model can invent a plausible path as easily as a real one, and a
- * finding pointing at nothing is worse than no finding.
- *
- * This mirrors how grounded generation validates that citation IDs belong to the
- * evidence actually supplied: structure is checked by the standalone schema, and the
- * request-dependent part is checked where the request context exists.
+ * Adds the workspace-dependent check: the cited file must exist inside the audited tree.
+ * A model can invent a plausible path as easily as a real one.
  */
 export function createLocatedFindingSchema(workspace: Workspace) {
-  return FindingSchema.refine(
+  return FindingRequestSchema.refine(
     async (finding) => {
       try {
         await workspace.resolveExisting(finding.path);

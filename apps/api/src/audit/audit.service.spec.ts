@@ -85,7 +85,9 @@ describe('a complete audit trajectory', () => {
         line: 2,
         severity: 'high',
         claim: 'Untrusted input is parsed without validation or error handling',
-        evidence: 'return JSON.parse(input);',
+        // Sent by a model that has not read the new contract. It is stripped, and the
+        // recorded evidence comes from the file regardless.
+        evidence: 'something the model made up',
       }),
       finish('Examined one source file and the readme.'),
     ]);
@@ -99,7 +101,7 @@ describe('a complete audit trajectory', () => {
         line: 2,
         severity: 'high',
         claim: 'Untrusted input is parsed without validation or error handling',
-        evidence: 'return JSON.parse(input);',
+        evidence: '  return JSON.parse(input);',
       },
     ]);
     expect(report.summary).toBe('Examined one source file and the readme.');
@@ -123,6 +125,109 @@ describe('a complete audit trajectory', () => {
   });
 });
 
+describe('evidence comes from the file, not the model', () => {
+  it('reads the cited line and ignores anything the model sent as evidence', async () => {
+    const { audit } = service([
+      call('report-finding', {
+        path: 'src/handler.ts',
+        line: 1,
+        severity: 'low',
+        claim: 'Signature accepts any',
+        evidence: 'THIS TEXT IS NOT IN THE FILE',
+      }),
+      finish('Done.'),
+    ]);
+    const { report } = await audit.audit(workspace);
+    expect(report.findings[0]?.evidence).toBe(
+      'export function handle(input: any) {',
+    );
+  });
+
+  it('reads a span when endLine is given', async () => {
+    const { audit } = service([
+      call('report-finding', {
+        path: 'src/handler.ts',
+        line: 1,
+        endLine: 2,
+        severity: 'medium',
+        claim: 'Whole function is unguarded',
+      }),
+      finish('Done.'),
+    ]);
+    const { report } = await audit.audit(workspace);
+    expect(report.findings[0]?.evidence).toBe(
+      'export function handle(input: any) {\n  return JSON.parse(input);',
+    );
+  });
+
+  it('records a file-level finding with no evidence rather than inventing one', async () => {
+    const { audit } = service([
+      call('report-finding', {
+        path: 'README.md',
+        severity: 'low',
+        claim: 'Readme says nothing about the build',
+      }),
+      finish('Done.'),
+    ]);
+    const { report } = await audit.audit(workspace);
+    expect(report.findings[0]).toEqual({
+      path: 'README.md',
+      severity: 'low',
+      claim: 'Readme says nothing about the build',
+    });
+  });
+
+  it('refuses a line beyond the end of the file', async () => {
+    const { audit, seen } = service([
+      call('report-finding', {
+        path: 'src/handler.ts',
+        line: 9_000,
+        severity: 'high',
+        claim: 'Cites a line that does not exist',
+      }),
+      finish('Done.'),
+    ]);
+    const { report } = await audit.audit(workspace);
+    expect(report.findings).toEqual([]);
+    const second = seen[1] as { observations: { status: string }[] };
+    expect(second.observations[0]?.status).toBe('failure');
+  });
+
+  it('rejects endLine before line at the schema boundary', async () => {
+    const { audit } = service([
+      call('report-finding', {
+        path: 'src/handler.ts',
+        line: 5,
+        endLine: 2,
+        severity: 'low',
+        claim: 'Backwards span',
+      }),
+      finish('Done.'),
+    ]);
+    const { report } = await audit.audit(workspace);
+    expect(report.findings).toEqual([]);
+  });
+
+  it('returns the resolved evidence to the agent so a wrong line is visible', async () => {
+    const { audit, seen } = service([
+      call('report-finding', {
+        path: 'src/handler.ts',
+        line: 2,
+        severity: 'low',
+        claim: 'Check the echo',
+      }),
+      finish('Done.'),
+    ]);
+    await audit.audit(workspace);
+    const second = seen[1] as {
+      observations: { result: { evidence: string } }[];
+    };
+    expect(second.observations[0]?.result.evidence).toBe(
+      '  return JSON.parse(input);',
+    );
+  });
+});
+
 describe('a finding that points at nothing', () => {
   it('is rejected as invalid input and the agent can correct itself', async () => {
     const { audit, seen } = service([
@@ -136,7 +241,6 @@ describe('a finding that points at nothing', () => {
         path: 'README.md',
         severity: 'low',
         claim: 'Readme is nearly empty',
-        evidence: '# Fixture',
       }),
       finish('Recovered after a bad path.'),
     ]);
