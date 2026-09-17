@@ -62,9 +62,14 @@ function responseBody(texts: string[], status = 'completed') {
  */
 type FetchCall = [unknown, RequestInit | undefined];
 
+/** Reads a request body without stringifying a non-string BodyInit. */
+function bodyOf(options: RequestInit | undefined): string {
+  return typeof options?.body === 'string' ? options.body : '';
+}
+
 function scriptedFetch(script: Decision[], repeatParts = new Set<number>()) {
   let index = 0;
-  const mock = jest.fn((_url: unknown, _options?: RequestInit) => {
+  const mock = jest.fn(() => {
     const step = index++;
     const decision = script[Math.min(step, script.length - 1)];
     const text = JSON.stringify(decision);
@@ -181,7 +186,7 @@ describe('a complete audit, end to end, with no pre-built objects anywhere', () 
     const calls = mock.mock.calls as unknown as FetchCall[];
     const options = calls[0]?.[1];
     if (!options) throw new Error('expected a request to have been issued');
-    const body = JSON.parse(String(options.body)) as {
+    const body = JSON.parse(bodyOf(options)) as {
       text: { format: { schema: unknown; strict: boolean } };
     };
     expect(body.text.format.strict).toBe(true);
@@ -245,7 +250,7 @@ describe('the provider pathologies that cost live runs', () => {
 
   it('reports a genuinely malformed body as a decision failure', async () => {
     // Not everything should be recovered from. Garbage is still garbage.
-    const mock = jest.fn((_url: unknown, _options?: RequestInit) =>
+    const mock = jest.fn(() =>
       Promise.resolve(
         new Response(responseBody(['{"decision":{"toolName":']), {
           headers: { 'Content-Type': 'application/json' },
