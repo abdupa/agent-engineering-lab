@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: In progress. v0.7-001 and v0.7-002 complete; v0.7-003 not started.
+Status: In progress. v0.7-001 to v0.7-003 complete; v0.7-004 not started.
 
 ## The product requirement that earns this release
 
@@ -178,6 +178,55 @@ Prettier would reformat the fixture, which changes bytes the key has hashed and 
 target unscoreable. ESLint would report the planted defects as errors and fail the gate.
 Both exclusions are recorded where they are made, since a future reader finding an
 un-linted directory deserves the reason rather than a mystery.
+
+### The matching rule, stated once
+
+> A finding matches a keyed defect when it names the same file and its cited span overlaps
+> the keyed span by at least one line.
+
+Everything else is a consequence of that sentence, or a decision about what to do with the
+findings it does not cover.
+
+**No tolerance beyond the keyed span.** The span is already the tolerance: a defect in a
+three-line call expression is keyed across all three, because any of them is an honest
+citation. Adding a window on top would count the same slack twice and let a vaguer citation
+score like an accurate one.
+
+**Five outcomes, because two would hide the thing worth seeing.** `matched`, `duplicate`,
+`near_miss`, `file_only`, `unkeyed`. Run 11 cited `grep.tool.ts:67` for a defect on line 65
+— the right file, the right defect, two lines off. Under a match/no-match report that is
+indistinguishable from a finding that was simply wrong, and the two call for completely
+different responses.
+
+**The near-miss window cannot move a score.** A near miss is never a match, never claims
+its defect, and never enters precision or recall. Because the threshold is diagnostic only,
+choosing it badly costs a noisier report and cannot inflate a number — which is what makes
+an arbitrary constant safe there and would make it dangerous anywhere in the scoring path.
+
+**`unkeyed` does not mean wrong.** Whether an unmatched finding is a false positive depends
+on the key's `exhaustive` flag, and applying that policy belongs to the metrics rather than
+here.
+
+**Order decides duplicates.** The first finding to reach a defect claims it. Judging which
+of two findings is better written is precisely what this release refuses to automate.
+
+**Paths compare exactly, never by suffix.** Suffix matching would make a run against the
+wrong root half-work, and numbers that look plausible are worse than a visible failure.
+
+#### Where the rule disagrees with the hand analysis
+
+Applied to run 11's three findings against a key written from the RUNS.md verdicts, the rule
+agrees on two and disagrees on one.
+
+RUNS.md calls `report-finding.tool.ts:51-54` a wrong span, because the finding points at the
+`citedLines` guard rather than at the resolve or the open. The rule calls it a match: the
+claim is about the gap between the resolve on line 50 and the open on line 55, the keyed
+span is that gap, and 51-54 sits inside it.
+
+Both readings are defensible. The rule is not being bent to agree, because a rule tuned on
+the run it was built from stops predicting anything about the next one. The consequence is
+stated instead: **citation accuracy measured this way reads two in three on run 11, where
+the hand count said one in three.** When those numbers are compared, this is why.
 
 ### What v0.7-002 produced
 

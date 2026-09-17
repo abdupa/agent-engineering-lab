@@ -4,12 +4,43 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 and v0.7-002 are complete. v0.7-003 is next and unauthorized.
+Status: **In progress.** v0.7-001 to v0.7-003 are complete. v0.7-004 is next and unauthorized.
 
 Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-003 — the rule every score rests on
+
+> A finding matches a keyed defect when it names the same file and its cited span overlaps
+> the keyed span by at least one line.
+
+No tolerance beyond the span, because the span is already the tolerance. Five outcomes
+rather than two, because run 11 cited a line two away from a real defect and a match-or-not
+report would show that as identical to being simply wrong. The near-miss window is
+diagnostic and can never move precision or recall, which is what makes an arbitrary
+threshold safe there. Order decides duplicates, since judging which of two findings is
+better written is exactly what this release refuses to automate.
+
+### It was checked against a real run, not only invented examples
+
+Applied to run 11's three findings against a key written from the hand verdicts in RUNS.md,
+the rule agrees on two and **disagrees on one**, and the disagreement is recorded rather
+than tuned away.
+
+RUNS.md calls one finding a wrong span; the rule calls it a match, because the claim is
+about the gap between a resolve and an open and the citation sits inside that gap. Both
+readings are defensible. Bending the rule to fit the run it was built from would stop it
+predicting anything about the next one.
+
+So **citation accuracy measured this way reads two in three on run 11, where the hand count
+said one in three.** That is written down now, before any metric is built on top of it.
+
+The rule did reproduce the severity finding exactly: every match reports `over` by two
+ranks, which is the inflation the hand analysis described as "wrong by about two notches".
+
+**56 new tests**, 861 in total.
 
 ## v0.7-002 — a target with a known answer
 
@@ -108,14 +139,10 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7-003 — the matching rule.** Not started. One documented rule deciding when a finding
-matches a keyed defect and what "unkeyed" means, with tests for the exact line, a line
-inside a keyed span, adjacent but outside, right file with the wrong line, right line in the
-wrong file, and two findings claiming the same defect.
-
-It is the decision the scores rest on. A rule that is too generous makes a vague agent look
-accurate; one that is too strict makes a correct finding look wrong for citing line 21
-instead of 20.
+**v0.7-004 — the metrics.** Not started. Pure functions turning a match result into
+precision, recall, citation accuracy, severity agreement, duplicate rate and tokens per
+finding, with hand-computed expected values and every rate reported beside its denominator
+so that one correct finding out of one never prints as 100%.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a
