@@ -4,6 +4,83 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 7 — the typed transport works. Three new things, one still broken.
+
+Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments ON · cap 20 steps / 60,000 tokens
+
+**Outcome: `DECISION_FAILED` at step 10. Zero findings. But the most informative run yet.**
+
+### The v0.3 question is settled
+
+`typedArguments: true` in the run record, and nine tool calls executed. **The live
+Structured Outputs API accepts the typed schema**, and the model fills a typed object
+correctly. That contract question has been open since v0.3-002 and is now answered with
+evidence rather than an offline conversion check.
+
+Schema cost: first-call input went 586 → 848 tokens, the price of a larger schema.
+
+### The retry policy was observed recovering, for the first time
+
+```
+attempt 1  transport_error TIMEOUT   10,004 ms
+attempt 2  transport_error TIMEOUT   10,002 ms
+attempt 3  response_received 200      4,909 ms   → execution success
+```
+
+Three separate steps hit transport timeouts and two recovered through SDK retries. v0.1
+documented this policy in 2026 and nothing had ever exercised it live. It works.
+
+### The budget behaved correctly by not firing
+
+60,000 allowed, 42,347 spent. The run ended on a decision failure, not the ceiling. A
+guard that stays quiet when it should is worth recording alongside one that fires.
+
+### New defect: an empty path was schema-valid and execution-invalid
+
+The first `list-files` call failed with `EXECUTION_FAILED`. The model had supplied
+`path: ""`.
+
+`.default('.')` only applies when a field is **absent**, and under strict Structured
+Outputs nothing is absent — every property must be supplied. The model sent an empty
+string, which passed the schema and then threw inside the handler.
+
+**Defaults stopped protecting model-supplied input the moment typed arguments were turned
+on.** `list-files` and `grep` now treat an empty or whitespace path as the root;
+`read-file` still refuses it, because naming one file has no sensible default. Six tests
+added.
+
+This is a consequence of the transport change that no offline check would have surfaced:
+the schema was valid, the conversion was valid, and only a real model choosing `""`
+exposed it.
+
+### Still failing, but the shape changed again
+
+```
+reason: unparseable_json   outputTextLength: 194
+endsWithBrace: true        quoteCount: 28        backslashCount: 0
+```
+
+**Zero backslashes** — exactly as the typed transport predicts, since there is no longer
+any nested JSON to escape. The double-escaping failure is gone.
+
+What remains is narrower: a correct typed payload of this shape needs about 22 quotes and
+28 were counted. Six extra, with no escapes, points at raw quote characters inside a
+string value — most likely a `claim` quoting an identifier or a line of code, which is a
+natural thing for an audit finding to contain.
+
+That is ordinary JSON string escaping rather than a structural fault, and it is
+unconfirmed. `PROVIDER_DEBUG_INVALID_OUTPUT=1` on the next run would settle it, and
+guessing has been wrong twice already.
+
+### Measurements
+
+42,347 tokens over 10 calls. 89 seconds, inflated by roughly 26 seconds of timeout and
+retry. Input grew 848 → 8,359 as observations accumulated.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T07-21-57-776Z.json`
+
+---
+
 ## Run 6 — the fix was necessary and not sufficient
 
 Date: 2026-09-17 · `gpt-5.6-luna` · `apps/api/src/audit` · cap 20 · evidence-by-reference in place

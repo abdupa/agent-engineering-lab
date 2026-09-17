@@ -335,3 +335,33 @@ describe('permission boundary', () => {
     ).rejects.toMatchObject({ code: 'DENIED' });
   });
 });
+
+describe('an empty path means the workspace root', () => {
+  // Found by a live run. Under strict Structured Outputs the model must supply every
+  // property, so `.default()` never fires for model-supplied input; it sent "" and the
+  // tool failed at execution instead of resolving the root.
+  it.each([['list-files'], ['grep']])(
+    '%s treats an empty path as the root rather than failing',
+    async (tool) => {
+      await expect(
+        executor.execute(tool, { path: '', query: 'hello' }, GRANTED),
+      ).resolves.toBeDefined();
+    },
+  );
+
+  it.each([['list-files'], ['grep']])(
+    '%s treats a whitespace path as the root',
+    async (tool) => {
+      await expect(
+        executor.execute(tool, { path: '   ', query: 'hello' }, GRANTED),
+      ).resolves.toBeDefined();
+    },
+  );
+
+  it('still refuses an empty path where no root default applies', async () => {
+    // read-file names one file; there is no sensible default, so empty stays invalid.
+    await expect(
+      executor.execute('read-file', { path: '' }, GRANTED),
+    ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+  });
+});
