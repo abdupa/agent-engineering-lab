@@ -4,12 +4,49 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 to v0.7-003 are complete. v0.7-004 is next and unauthorized.
+Status: **In progress.** v0.7-001 to v0.7-004 are complete. v0.7-005 is next and unauthorized.
 
 Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-004 — run 11 finally has numbers
+
+| Measure                  | Run 11                                         |
+| ------------------------ | ---------------------------------------------- |
+| Recall                   | 2/3 (67%)                                      |
+| Precision                | 2/3 (67%)                                      |
+| Citation accuracy        | 2/3 (67%)                                      |
+| Severity agreement       | 0/2 (0%), mean signed delta **+2** — inflating |
+| False alarms on controls | 0                                              |
+| Cost per located defect  | **~34,000 tokens**                             |
+
+One run, against a key written from one person's reading. A data point, not a result. What
+it is worth is that the next run can be compared against it.
+
+The cost figure is the one nobody had seen before: 68,157 tokens over 13 provider calls to
+locate two defects. Whether that is expensive is a question this repository still cannot
+answer, because nothing has established what an audit finding is worth. The number exists to
+be argued about now, which is more than was true yesterday.
+
+### Two rules govern every number
+
+**Every rate carries its denominator.** One correct finding out of one is 100%, and is also
+a sample of one. Only the fraction says which you are looking at.
+
+**A rate that cannot be computed is absent, not zero.** A run that found nothing has no
+precision rather than a precision of zero — zero would claim everything it said was wrong,
+and it said nothing. A key that does not claim to list every defect reports no precision at
+all and states why.
+
+**There is no single score,** and a test fails if a field named `score`, `grade`, `overall`,
+`total` or `rating` ever appears on a scorecard. A release built to stop one number hiding
+the truth does not finish by producing one number.
+
+**42 new tests**, 903 in total. Every expected value was worked out by hand with the
+arithmetic written beside it, because a metric test that computes its expectation the same
+way the code does proves only that the code agrees with itself.
 
 ## v0.7-003 — the rule every score rests on
 
@@ -139,10 +176,10 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7-004 — the metrics.** Not started. Pure functions turning a match result into
-precision, recall, citation accuracy, severity agreement, duplicate rate and tokens per
-finding, with hand-computed expected values and every rate reported beside its denominator
-so that one correct finding out of one never prints as 100%.
+**v0.7-005 — the scorecard script and the hand-label form.** Not started. A command that
+scores a recorded run and writes the scorecard to a file, plus a form for labeling runs made
+against unlabeled code, so the four findings sitting in stored records become data instead of
+prose in RUNS.md.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a

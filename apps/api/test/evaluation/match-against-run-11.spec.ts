@@ -1,6 +1,7 @@
 import { join, resolve } from 'node:path';
 import { loadRunRecord } from '../../src/evaluation/run-record.loader';
 import { matchFindings, countOutcomes } from '../../src/evaluation/match';
+import { formatRate, scoreRun } from '../../src/evaluation/metrics';
 import type { AnswerKey } from '../../src/evaluation/answer-key.schema';
 import type { RunRecord } from '../../src/evaluation/run-record.schema';
 
@@ -170,6 +171,77 @@ describe('run 11 through the matching rule', () => {
       file_only: 0,
       unkeyed: 0,
     });
+  });
+});
+
+describe('run 11 scored', () => {
+  /**
+   * The first time any run in this repository has had numbers attached to it. They are
+   * about one run against a key written from one person's reading, so they are a data
+   * point and not a result — but they are a data point that can now be compared to the
+   * next one, which is the whole reason this release exists.
+   */
+  it('produces the numbers the run actually earned', () => {
+    const card = scoreRun(record, run11Key);
+
+    // 2 of the 3 keyed defects were located; grep.tool.ts was cited two lines off.
+    expect(formatRate(card.recall)).toBe('2/3 (67%)');
+
+    // The key is not exhaustive, but nothing here is unclassified — every finding reached
+    // either a defect or a near miss — so precision is available after all.
+    expect(card.precision && formatRate(card.precision)).toBe('2/3 (67%)');
+
+    // Of the three findings that reached a real defect, two cited a line inside it.
+    expect(formatRate(card.citationAccuracy)).toBe('2/3 (67%)');
+  });
+
+  it('measures the severity inflation as two ranks, on every match', () => {
+    // RUNS.md: "High severity is wrong by about two notches." Now a number.
+    const card = scoreRun(record, run11Key);
+    expect(card.severity).toMatchObject({
+      exact: 0,
+      over: 2,
+      under: 0,
+      meanSignedDelta: 2,
+    });
+    expect(formatRate(card.severity.agreement)).toBe('0/2 (0%)');
+  });
+
+  it('prices the run at roughly thirty-four thousand tokens per located defect', () => {
+    /**
+     * 68,157 tokens over 13 provider calls, two defects located. The number is not a
+     * verdict — nobody has established what an audit finding is worth — but it is the
+     * first time the cost of one has been stated at all, and every later run can be
+     * compared against it.
+     */
+    const card = scoreRun(record, run11Key);
+    expect(card.cost.totalTokens).toBe(68_157);
+    expect(card.cost.providerCalls).toBe(13);
+    expect(card.cost.tokensPerLocatedDefect).toBeCloseTo(34_078.5, 1);
+  });
+
+  it('raises no false alarm and repeats itself not at all', () => {
+    const card = scoreRun(record, run11Key);
+    expect(card.controlFalseAlarms).toMatchObject({ numerator: 0 });
+    expect(card.duplicateRate).toMatchObject({ numerator: 0 });
+    expect(card.findingsOnUnknownFiles).toBe(0);
+  });
+
+  it('records which defect went unfound', () => {
+    expect(scoreRun(record, run11Key).missed).toEqual(['R11-002']);
+  });
+
+  it('reads 2/3 where the hand count read 1/3, for the reason recorded above', () => {
+    /**
+     * The disagreement is on report-finding.tool.ts. RUNS.md calls the citation a wrong
+     * span; the rule calls it a match because it sits inside the gap the claim is about.
+     * Both readings are defensible and the rule was not bent to agree. This assertion
+     * exists so the gap between the two numbers stays visible rather than being
+     * rediscovered as a surprise.
+     */
+    const card = scoreRun(record, run11Key);
+    expect(card.citationAccuracy.numerator).toBe(2);
+    expect(card.citationAccuracy.denominator).toBe(3);
   });
 });
 

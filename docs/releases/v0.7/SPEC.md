@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: In progress. v0.7-001 to v0.7-003 complete; v0.7-004 not started.
+Status: In progress. v0.7-001 to v0.7-004 complete; v0.7-005 not started.
 
 ## The product requirement that earns this release
 
@@ -178,6 +178,56 @@ Prettier would reformat the fixture, which changes bytes the key has hashed and 
 target unscoreable. ESLint would report the planted defects as errors and fail the gate.
 Both exclusions are recorded where they are made, since a future reader finding an
 un-linted directory deserves the reason rather than a mystery.
+
+### The first numbers, and the two rules that govern all of them
+
+**Every rate carries its denominator.** A rate is a fraction and the percentage is derived
+from it. One correct finding out of one is 100% and is also a sample of one, and only the
+denominator says so. A bare percentage is the cheapest way to make three anecdotes look like
+evidence.
+
+**A rate that cannot be computed is absent, not zero.** No findings means precision is
+unmeasurable, not nil. A key that does not claim to be exhaustive cannot classify its
+unmatched findings at all, so it reports no precision and says why. Substituting zero would
+make a claim the data does not support — the same failure `unscoreable` prevents at load.
+
+There is deliberately **no single score**. A release built to stop one number hiding the
+truth does not finish by producing one number, and a test fails if a field named `score`,
+`grade`, `overall`, `total` or `rating` ever appears on a scorecard.
+
+What precision is allowed to judge, and what is excluded, with the reason for each:
+
+| Outcome     | In precision?                 | Why                                                                                       |
+| ----------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `matched`   | yes, as right                 | Located a real defect and cited it inside the span                                        |
+| `near_miss` | yes, as wrong                 | A claim on the wrong line is worse than none: a reviewer must recheck the file themselves |
+| `unkeyed`   | only if the key is exhaustive | Otherwise genuinely unknown — run 5 found real defects nobody planted                     |
+| `duplicate` | no                            | Repeating a correct finding is noise, not error; `duplicateRate` measures it separately   |
+| `file_only` | no                            | A finding citing no line cannot be right or wrong about one                               |
+
+Dropping things from a denominator is exactly how a metric becomes flattering, so each
+exclusion is stated rather than assumed.
+
+#### Run 11, scored
+
+The first run in this repository to have numbers attached.
+
+| Measure                  | Value                                          |
+| ------------------------ | ---------------------------------------------- |
+| Recall                   | 2/3 (67%)                                      |
+| Precision                | 2/3 (67%)                                      |
+| Citation accuracy        | 2/3 (67%)                                      |
+| Severity agreement       | 0/2 (0%), mean signed delta **+2** — inflating |
+| False alarms on controls | 0                                              |
+| Cost per located defect  | **~34,000 tokens**                             |
+
+These describe one run against a key written from one person's reading. They are a data
+point, not a result. Their value is that the next run can be compared against them.
+
+The token figure is the one nobody had seen before. 68,157 tokens over 13 provider calls
+produced two located defects. Whether that is expensive is not a question this repository
+can answer yet — nothing has established what an audit finding is worth — but the number now
+exists to be argued about.
 
 ### The matching rule, stated once
 
