@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { correlationFields } from '../observability/request-context';
+import { currentUsage, withUsage } from '../observability/usage';
 import type { ToolExecutor } from '../tools/tool-executor';
 import { ToolExecutionError } from '../tools/tool-execution.error';
 import type { ToolPermissionContext } from '../tools/tool';
@@ -28,14 +29,31 @@ export class AgentRunner {
   private readonly logger = new Logger(AgentRunner.name);
   private readonly maxIterations: number;
   private readonly timeoutMs: number;
+  private readonly maxTokens: number | undefined;
 
   constructor(
     private readonly decisions: Pick<AgentDecisionService, 'decide'>,
     private readonly executor: Pick<ToolExecutor, 'execute'>,
-    options: { maxIterations?: number; timeoutMs?: number } = {},
+    options: {
+      maxIterations?: number;
+      timeoutMs?: number;
+      /**
+       * Total provider tokens this run may spend. Checked between steps, so a run can
+       * overshoot by the one call that crossed the line — it is a ceiling that stops
+       * the next call, not a hard cap on the current one.
+       */
+      maxTokens?: number;
+    } = {},
   ) {
     this.maxIterations = options.maxIterations ?? 6;
     this.timeoutMs = options.timeoutMs ?? 60_000;
+    this.maxTokens = options.maxTokens;
+    if (
+      this.maxTokens !== undefined &&
+      (!Number.isSafeInteger(this.maxTokens) || this.maxTokens < 1)
+    ) {
+      throw new Error('Agent token budget must be a positive safe integer');
+    }
     if (!Number.isSafeInteger(this.maxIterations) || this.maxIterations < 1) {
       throw new Error('Agent iteration limit must be a positive safe integer');
     }
@@ -68,6 +86,13 @@ export class AgentRunner {
         throw (stopped = new AgentRunError('CANCELLED'));
       if (performance.now() - started >= this.timeoutMs)
         throw (stopped = new AgentRunError('TIMEOUT'));
+      if (this.maxTokens !== undefined) {
+        // The run opens its own usage scope below, so this is never undefined when a
+        // budget is set. A guard that silently does nothing is worse than no guard.
+        const spent = currentUsage()?.totalTokens ?? 0;
+        if (spent >= this.maxTokens)
+          throw (stopped = new AgentRunError('BUDGET_EXCEEDED'));
+      }
     };
     let timer: ReturnType<typeof setTimeout> | undefined;
     let cancel: (() => void) | undefined;
@@ -161,8 +186,13 @@ export class AgentRunner {
       check();
       throw new AgentRunError('LOOP_LIMIT');
     };
+    const race = () => Promise.race([execute(), stop]);
     try {
-      return await Promise.race([execute(), stop]);
+      // A scope of its own when a budget applies, so the guard has something to read.
+      // Scopes nest, so any request-level accounting above this still sees every call.
+      return this.maxTokens === undefined
+        ? await race()
+        : (await withUsage(race)).result;
     } catch (error) {
       let finalError: unknown = error;
       try {

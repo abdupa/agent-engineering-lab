@@ -116,6 +116,17 @@ pricing table hardcoded here would go stale silently and report a confident wron
 Token counts are read from the provider response inside the OpenAI adapter, so any fake
 provider reports zero. In tests, `usage` is zero everywhere, and correctly so.
 
+### Token budget
+
+`AUDIT_MAX_TOKENS` caps what one audit may spend. Checked between steps, so a run can
+overshoot by the single call that crossed the line — a ceiling that stops the next call,
+not a hard cap on the current one. Unset means unbounded, which is what steps and wall
+time alone give you.
+
+A run that hits it returns HTTP 200 with `status: "incomplete"` and
+`reason: "BUDGET_EXCEEDED"`, keeping whatever it found. The agent ran correctly and spent
+what it was allowed; that is an outcome, not a fault.
+
 ## Skills
 
 Four Claude Code skills encode the disciplines that matter, so they run instead of being

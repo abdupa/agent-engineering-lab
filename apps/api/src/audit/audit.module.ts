@@ -63,9 +63,17 @@ import { Workspace } from './workspace';
     },
     {
       provide: AuditService,
-      inject: [AgentDecisionService],
-      useFactory: (decisions: AgentDecisionService) =>
-        new AuditService(decisions),
+      inject: [AgentDecisionService, ConfigService],
+      useFactory: (decisions: AgentDecisionService, config: ConfigService) => {
+        // Unbounded unless configured. An invalid value is ignored rather than
+        // silently applying a budget nobody asked for.
+        const raw = Number(config.get<string>('AUDIT_MAX_TOKENS'));
+        const maxTokens =
+          Number.isSafeInteger(raw) && raw > 0 ? raw : undefined;
+        return new AuditService(decisions, {
+          ...(maxTokens === undefined ? {} : { maxTokens }),
+        });
+      },
     },
   ],
 })

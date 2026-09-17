@@ -33,6 +33,19 @@ Read it as: the agent works, it finds real defects, and it has never finished a 
 **627 passed, 34 suites.** Format, lint, typecheck, build and diff clean. Six live runs
 recorded in [RUNS.md](releases/v0.6/RUNS.md), roughly 80,000 tokens, under one cent.
 
+## Since release
+
+**Token budget added** (`AUDIT_MAX_TOKENS`). Budgets bounded steps and wall time but never
+cost, which was an inconsistency in something already treated as a safety boundary. A live
+run burned 41,677 input tokens and produced nothing, and growth is roughly quadratic in
+step count — a larger step cap on a bigger codebase is a real runaway, not a hypothetical
+one. Earned by measured evidence rather than scheduled.
+
+Building it surfaced a defect in the accounting itself: `AsyncLocalStorage.run` replaces
+the store, so a run opening its own scope would have hidden every call from the
+request-level accounting above it and the endpoint would have reported zero usage. Scopes
+now carry a parent and `recordUsage` credits the whole chain.
+
 ## Next planned work
 
 **v0.7 — Second agent (contract review).** Not started. Its first task is the completing

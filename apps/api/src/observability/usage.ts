@@ -18,6 +18,8 @@ interface Accumulator {
   calls: number;
   inputTokens: number;
   outputTokens: number;
+  /** Scopes nest: an inner scope also credits everything above it. */
+  readonly parent?: Accumulator;
 }
 
 /**
@@ -34,11 +36,19 @@ export function recordUsage(
   inputTokens: number | undefined,
   outputTokens: number | undefined,
 ): void {
-  const scope = usageScope.getStore();
-  if (!scope) return;
-  scope.calls += 1;
-  scope.inputTokens += Number.isFinite(inputTokens) ? (inputTokens ?? 0) : 0;
-  scope.outputTokens += Number.isFinite(outputTokens) ? (outputTokens ?? 0) : 0;
+  const input = Number.isFinite(inputTokens) ? (inputTokens ?? 0) : 0;
+  const output = Number.isFinite(outputTokens) ? (outputTokens ?? 0) : 0;
+  // Credited to every enclosing scope, not just the innermost. A run that opens its
+  // own scope to enforce a budget must not blind the request-level accounting above it.
+  for (
+    let scope = usageScope.getStore();
+    scope !== undefined;
+    scope = scope.parent
+  ) {
+    scope.calls += 1;
+    scope.inputTokens += input;
+    scope.outputTokens += output;
+  }
 }
 
 /** Totals so far in the active scope, or undefined when none is active. */
@@ -51,7 +61,12 @@ export function currentUsage(): UsageTotals | undefined {
 export async function withUsage<T>(
   work: () => Promise<T>,
 ): Promise<{ result: T; usage: UsageTotals }> {
-  const scope: Accumulator = { calls: 0, inputTokens: 0, outputTokens: 0 };
+  const scope: Accumulator = {
+    calls: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    parent: usageScope.getStore(),
+  };
   const result = await usageScope.run(scope, work);
   return { result, usage: snapshot(scope) };
 }

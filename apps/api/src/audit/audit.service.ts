@@ -22,6 +22,8 @@ export const AUDIT_PERMISSIONS = Object.freeze([
 export interface AuditOptions {
   readonly maxIterations?: number;
   readonly timeoutMs?: number;
+  /** Total provider tokens one audit may spend. Unbounded when absent. */
+  readonly maxTokens?: number;
   readonly toolTimeoutMs?: number;
   readonly signal?: AbortSignal;
 }
@@ -117,6 +119,9 @@ export class AuditService {
     const runner = new AgentRunner(this.decisions, counted, {
       maxIterations: this.options.maxIterations ?? 20,
       timeoutMs: this.options.timeoutMs ?? 120_000,
+      ...(this.options.maxTokens === undefined
+        ? {}
+        : { maxTokens: this.options.maxTokens }),
     });
 
     try {

@@ -44,6 +44,8 @@ const emptyFailureStatus: Record<AgentRunErrorCode, number> = {
   INVALID_DECISION: 502,
   CANCELLED: 503,
   LOOP_LIMIT: 200,
+  // The agent ran correctly and spent what it was allowed. An outcome, not a fault.
+  BUDGET_EXCEEDED: 200,
   INVALID_INPUT: 500,
   INTERNAL: 500,
 };
@@ -54,6 +56,7 @@ const failureMessages: Record<AgentRunErrorCode, string> = {
   INVALID_DECISION: 'Audit produced an invalid decision',
   CANCELLED: 'Audit was cancelled',
   LOOP_LIMIT: 'Audit reached its step limit',
+  BUDGET_EXCEEDED: 'Audit exhausted its token budget',
   INVALID_INPUT: 'Internal Server Error',
   INTERNAL: 'Internal Server Error',
 };

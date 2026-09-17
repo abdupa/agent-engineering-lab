@@ -30,6 +30,11 @@ const MAX_ITERATIONS = (() => {
   return Number.isInteger(raw) && raw >= 1 && raw <= 40 ? raw : 12;
 })();
 
+const MAX_TOKENS = (() => {
+  const raw = Number(process.env.AUDIT_MAX_TOKENS ?? '');
+  return Number.isSafeInteger(raw) && raw > 0 ? raw : undefined;
+})();
+
 const RECORDS = resolve(__dirname, '../../../docs/releases/v0.6/runs');
 
 function fail(reason: string): void {
@@ -70,6 +75,7 @@ async function main(): Promise<void> {
     const service = new AuditService(app.get(AgentDecisionService), {
       maxIterations: MAX_ITERATIONS,
       timeoutMs: 300_000,
+      ...(MAX_TOKENS === undefined ? {} : { maxTokens: MAX_TOKENS }),
     });
 
     const runId = randomUUID();
@@ -106,6 +112,7 @@ async function main(): Promise<void> {
           startedAt,
           model: process.env.OPENAI_MODEL,
           maxIterations: MAX_ITERATIONS,
+          maxTokens: MAX_TOKENS ?? 'unbounded',
           typedArguments,
           rubric: rubric ?? '(default)',
           outcome: failure ? failure.code : 'complete',
