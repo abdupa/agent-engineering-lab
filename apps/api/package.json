@@ -10,7 +10,8 @@
     "test": "jest --runInBand",
     "smoke:openai": "node -r ts-node/register scripts/live-openai-smoke.ts",
     "probe:agent": "node -r ts-node/register scripts/live-agent-probe.ts",
-    "audit:live": "node -r ts-node/register scripts/live-audit.ts"
+    "audit:live": "node -r ts-node/register scripts/live-audit.ts",
+    "score:runs": "node -r ts-node/register scripts/score-runs.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

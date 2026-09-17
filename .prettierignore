@@ -8,3 +8,7 @@ docs/releases/v0.6/runs/
 # exact bytes are recorded in the answer key, so reformatting one silently invalidates the
 # key that makes it scoreable.
 docs/eval/targets/
+
+# Scorecards are written by scripts/score-runs.ts. Reformatting one would make the file on
+# disk differ from what the script produces, and the baseline gate compares them.
+docs/eval/scorecards/

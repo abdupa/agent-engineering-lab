@@ -6,6 +6,7 @@ import {
   type MatchOutcome,
   type MatchResult,
 } from './match';
+import type { RunLabel, Verdict } from './run-label.schema';
 
 /**
  * Turns a matched run into numbers.
@@ -222,5 +223,99 @@ export function scoreRun(record: RunRecord, key: AnswerKey): Scorecard {
     findingsOnUnknownFiles: result.findings.filter(
       (match) => match.file === 'unknown',
     ).length,
+  };
+}
+
+/**
+ * What the matching rule would call each verdict a person recorded.
+ *
+ * `unverifiable` maps to nothing: the person could not decide, so there is no judgement to
+ * agree or disagree with, and it is excluded from the comparison rather than counted as a
+ * disagreement.
+ */
+const EXPECTED_OUTCOME: Record<Verdict, MatchOutcome | undefined> = {
+  correct: 'matched',
+  mislocated: 'near_miss',
+  false: 'unkeyed',
+  unverifiable: undefined,
+};
+
+export interface RuleDisagreement {
+  readonly index: number;
+  readonly verdict: Verdict;
+  readonly outcome: MatchOutcome;
+  readonly note: string;
+}
+
+export interface RuleAgreement {
+  /** Verdicts the rule reproduced, over verdicts it could be compared against. */
+  readonly agreement: Rate;
+  readonly compared: number;
+  readonly skipped: number;
+  readonly disagreements: readonly RuleDisagreement[];
+}
+
+/**
+ * Measures the matching rule against the person who read the findings.
+ *
+ * This is the instrument checking itself. Every other number here describes the agent; this
+ * one describes whether the thing producing those numbers agrees with the judgement it is
+ * standing in for. A rule that scores highly while disagreeing with every human reading is
+ * measuring something, but not what anybody asked for.
+ *
+ * It is reported and never used to adjust the rule. Tuning a rule until it agrees with the
+ * run it was built from stops it predicting anything about the next one.
+ */
+export function compareToLabels(
+  result: MatchResult,
+  label: RunLabel,
+): RuleAgreement {
+  const byIndex = new Map(
+    result.findings.map((match) => [match.index, match] as const),
+  );
+
+  let compared = 0;
+  let skipped = 0;
+  const disagreements: RuleDisagreement[] = [];
+
+  for (const verdict of label.verdicts) {
+    const expected = EXPECTED_OUTCOME[verdict.verdict];
+    const match = byIndex.get(verdict.index);
+
+    if (expected === undefined || match === undefined) {
+      skipped += 1;
+      continue;
+    }
+
+    compared += 1;
+    if (match.outcome !== expected) {
+      disagreements.push({
+        index: verdict.index,
+        verdict: verdict.verdict,
+        outcome: match.outcome,
+        note: verdict.note,
+      });
+    }
+  }
+
+  return {
+    agreement: rate(compared - disagreements.length, compared),
+    compared,
+    skipped,
+    disagreements,
+  };
+}
+
+/** Scores a labeled run and reports how far the rule agreed with the person. */
+export function scoreLabeledRun(
+  record: RunRecord,
+  label: RunLabel,
+): { readonly scorecard: Scorecard; readonly ruleAgreement: RuleAgreement } {
+  return {
+    scorecard: scoreRun(record, label.key),
+    ruleAgreement: compareToLabels(
+      matchFindings(record.findings, label.key),
+      label,
+    ),
   };
 }

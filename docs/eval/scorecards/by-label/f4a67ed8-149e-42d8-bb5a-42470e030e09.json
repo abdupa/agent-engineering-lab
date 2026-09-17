@@ -1,0 +1,74 @@
+{
+  "runId": "f4a67ed8-149e-42d8-bb5a-42470e030e09",
+  "model": "gpt-5.6-luna",
+  "outcome": "DECISION_FAILED",
+  "target": "audit-tools-as-of-run-5",
+  "keyVersion": 1,
+  "exhaustive": false,
+  "findings": 1,
+  "keyedDefects": 1,
+  "outcomes": {
+    "matched": 1,
+    "duplicate": 0,
+    "near_miss": 0,
+    "file_only": 0,
+    "unkeyed": 0
+  },
+  "recall": {
+    "numerator": 1,
+    "denominator": 1,
+    "value": 1
+  },
+  "precision": {
+    "numerator": 1,
+    "denominator": 1,
+    "value": 1
+  },
+  "citationAccuracy": {
+    "numerator": 1,
+    "denominator": 1,
+    "value": 1
+  },
+  "controlFalseAlarms": {
+    "numerator": 0,
+    "denominator": 1,
+    "value": 0
+  },
+  "duplicateRate": {
+    "numerator": 0,
+    "denominator": 1,
+    "value": 0
+  },
+  "severity": {
+    "exact": 1,
+    "over": 0,
+    "under": 0,
+    "agreement": {
+      "numerator": 1,
+      "denominator": 1,
+      "value": 1
+    },
+    "meanSignedDelta": 0
+  },
+  "cost": {
+    "totalTokens": 14196,
+    "providerCalls": 6,
+    "locatedDefectsPer10kTokens": 0.7044237813468582,
+    "tokensPerLocatedDefect": 14196
+  },
+  "missed": [],
+  "findingsOnUnknownFiles": 0,
+  "scoredAgainst": "by-label",
+  "labeledBy": "abe",
+  "labeledOn": "2026-09-17",
+  "ruleAgreement": {
+    "agreement": {
+      "numerator": 1,
+      "denominator": 1,
+      "value": 1
+    },
+    "compared": 1,
+    "skipped": 0,
+    "disagreements": []
+  }
+}

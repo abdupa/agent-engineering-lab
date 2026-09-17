@@ -1,7 +1,7 @@
 import { join, resolve } from 'node:path';
 import { loadRunRecord } from '../../src/evaluation/run-record.loader';
 import { matchFindings, countOutcomes } from '../../src/evaluation/match';
-import { formatRate, scoreRun } from '../../src/evaluation/metrics';
+import { loadRunLabel } from '../../src/evaluation/run-label.loader';
 import type { AnswerKey } from '../../src/evaluation/answer-key.schema';
 import type { RunRecord } from '../../src/evaluation/run-record.schema';
 
@@ -24,67 +24,24 @@ const RECORD = resolve(
 );
 
 /**
- * Written from the hand analysis in RUNS.md, not from the source files — those have been
- * edited since the run, so their current line numbers would be about today's code rather
- * than the code the agent read.
- *
- * `exhaustive: false`: this is real code, nobody enumerated its defects, and an unmatched
- * finding here is unclassified rather than wrong.
+ * The key comes from the committed label file rather than being written out again here.
+ * Two copies of the same judgement drift apart, and the whole point of the label was to
+ * stop the analysis living in prose that nothing checks.
  */
-const run11Key: AnswerKey = {
-  target: 'audit-tools-as-of-run-11',
-  version: 1,
-  createdAt: '2026-09-17',
-  tree: '.',
-  exhaustive: false,
-  description:
-    'The three TOCTOU observations run 11 reported, keyed at the lines a person confirmed by hand in RUNS.md rather than at the lines the agent cited.',
-  files: [
-    { path: 'read-file.tool.ts', sha256: '0'.repeat(64), expected: 'defects' },
-    { path: 'grep.tool.ts', sha256: '1'.repeat(64), expected: 'defects' },
-    {
-      path: 'report-finding.tool.ts',
-      sha256: '2'.repeat(64),
-      expected: 'defects',
-    },
-  ],
-  defects: [
-    {
-      id: 'R11-001',
-      path: 'read-file.tool.ts',
-      line: 35,
-      endLine: 35,
-      severity: 'low',
-      summary: 'Resolve and open are separate steps',
-      why: 'The hand check confirmed line 35 is the resolveExisting call the claim is about. Keyed low because the attack needs someone who can already write symlinks into the audited tree, which buys little over editing the files directly.',
-    },
-    {
-      id: 'R11-002',
-      path: 'grep.tool.ts',
-      line: 65,
-      endLine: 65,
-      severity: 'low',
-      summary: 'The path join the claim is actually about',
-      why: 'RUNS.md records that the join is on line 65 and that line 67 is the NUL-byte check. The agent cited 67, which is why this entry is keyed where the defect is rather than where the finding pointed.',
-    },
-    {
-      id: 'R11-003',
-      path: 'report-finding.tool.ts',
-      line: 50,
-      endLine: 55,
-      severity: 'low',
-      summary: 'The gap between resolving at 50 and opening at 55',
-      why: 'RUNS.md records the resolve on line 50 and the open on line 55, with the citedLines guard between them. The keyed span is the whole gap, because that is what the claim is about.',
-    },
-  ],
-};
+const LABELS = resolve(__dirname, '../../../..', 'docs/eval/labels');
+const RUN_11 = '3437b196-86a6-47a9-bd96-29e2229d697f';
 
+let run11Key: AnswerKey;
 let record: RunRecord;
 
 beforeAll(async () => {
   const load = await loadRunRecord(RECORD);
   if (!load.ok) throw new Error(`${load.reason}: ${load.detail}`);
   record = load.record;
+
+  const label = await loadRunLabel(LABELS, RUN_11);
+  if (!label.ok) throw new Error(`${label.reason}: ${label.detail}`);
+  run11Key = label.label.key;
 });
 
 describe('run 11 through the matching rule', () => {
@@ -171,77 +128,6 @@ describe('run 11 through the matching rule', () => {
       file_only: 0,
       unkeyed: 0,
     });
-  });
-});
-
-describe('run 11 scored', () => {
-  /**
-   * The first time any run in this repository has had numbers attached to it. They are
-   * about one run against a key written from one person's reading, so they are a data
-   * point and not a result — but they are a data point that can now be compared to the
-   * next one, which is the whole reason this release exists.
-   */
-  it('produces the numbers the run actually earned', () => {
-    const card = scoreRun(record, run11Key);
-
-    // 2 of the 3 keyed defects were located; grep.tool.ts was cited two lines off.
-    expect(formatRate(card.recall)).toBe('2/3 (67%)');
-
-    // The key is not exhaustive, but nothing here is unclassified — every finding reached
-    // either a defect or a near miss — so precision is available after all.
-    expect(card.precision && formatRate(card.precision)).toBe('2/3 (67%)');
-
-    // Of the three findings that reached a real defect, two cited a line inside it.
-    expect(formatRate(card.citationAccuracy)).toBe('2/3 (67%)');
-  });
-
-  it('measures the severity inflation as two ranks, on every match', () => {
-    // RUNS.md: "High severity is wrong by about two notches." Now a number.
-    const card = scoreRun(record, run11Key);
-    expect(card.severity).toMatchObject({
-      exact: 0,
-      over: 2,
-      under: 0,
-      meanSignedDelta: 2,
-    });
-    expect(formatRate(card.severity.agreement)).toBe('0/2 (0%)');
-  });
-
-  it('prices the run at roughly thirty-four thousand tokens per located defect', () => {
-    /**
-     * 68,157 tokens over 13 provider calls, two defects located. The number is not a
-     * verdict — nobody has established what an audit finding is worth — but it is the
-     * first time the cost of one has been stated at all, and every later run can be
-     * compared against it.
-     */
-    const card = scoreRun(record, run11Key);
-    expect(card.cost.totalTokens).toBe(68_157);
-    expect(card.cost.providerCalls).toBe(13);
-    expect(card.cost.tokensPerLocatedDefect).toBeCloseTo(34_078.5, 1);
-  });
-
-  it('raises no false alarm and repeats itself not at all', () => {
-    const card = scoreRun(record, run11Key);
-    expect(card.controlFalseAlarms).toMatchObject({ numerator: 0 });
-    expect(card.duplicateRate).toMatchObject({ numerator: 0 });
-    expect(card.findingsOnUnknownFiles).toBe(0);
-  });
-
-  it('records which defect went unfound', () => {
-    expect(scoreRun(record, run11Key).missed).toEqual(['R11-002']);
-  });
-
-  it('reads 2/3 where the hand count read 1/3, for the reason recorded above', () => {
-    /**
-     * The disagreement is on report-finding.tool.ts. RUNS.md calls the citation a wrong
-     * span; the rule calls it a match because it sits inside the gap the claim is about.
-     * Both readings are defensible and the rule was not bent to agree. This assertion
-     * exists so the gap between the two numbers stays visible rather than being
-     * rediscovered as a surprise.
-     */
-    const card = scoreRun(record, run11Key);
-    expect(card.citationAccuracy.numerator).toBe(2);
-    expect(card.citationAccuracy.denominator).toBe(3);
   });
 });
 

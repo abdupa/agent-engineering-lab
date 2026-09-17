@@ -1,0 +1,41 @@
+{
+  "runId": "f4a67ed8-149e-42d8-bb5a-42470e030e09",
+  "labeledOn": "2026-09-17",
+  "labeledBy": "abe",
+  "source": "docs/releases/v0.6/RUNS.md, Run 5",
+  "notes": "Run 5 audited apps/api/src/audit, which nobody had annotated. It recorded one finding and lost a second to the argumentsJson encoding defect before it could be stored. Both were checked by hand and both were real, and the lost one is not labeled here because it is not in the record — a label describes what a run produced, not what it meant to produce.",
+  "key": {
+    "target": "audit-tools-as-of-run-5",
+    "version": 1,
+    "createdAt": "2026-09-17",
+    "tree": ".",
+    "exhaustive": false,
+    "description": "The defect run 5 found in the audit tools, keyed at the line a person confirmed by hand. Not exhaustive: this is real code and nobody enumerated its defects.",
+    "files": [
+      {
+        "path": "read-file.tool.ts",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "expected": "defects"
+      }
+    ],
+    "defects": [
+      {
+        "id": "R05-001",
+        "path": "read-file.tool.ts",
+        "line": 31,
+        "endLine": 31,
+        "severity": "medium",
+        "summary": "The whole file is read before the byte budget is applied",
+        "why": "RUNS.md confirms line 31 held `const buffer = await readFile(absolute);`. The maxBytes budget bounded what was returned and never what was read, so a 2 MB file behind a 1 KB budget allocated 2 MB. Keyed medium: it is a real resource issue reachable from an untrusted path, and it exposes nothing."
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "index": 0,
+      "verdict": "correct",
+      "defectId": "R05-001",
+      "note": "RUNS.md: the cited line is correct and the claim is true. The defect was fixed by reading through a file handle for min(maxBytes, size) bytes."
+    }
+  ]
+}

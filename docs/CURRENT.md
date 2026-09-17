@@ -4,12 +4,57 @@ Project: Agent Engineering Lab
 
 Release: v0.7 — Evaluation
 
-Status: **In progress.** v0.7-001 to v0.7-004 are complete. v0.7-005 is next and unauthorized.
+Status: **In progress.** v0.7-001 to v0.7-005 are complete. v0.7-006 is next and unauthorized.
 
 Current task: none active.
 
 v0.6 is **Released** with one exit criterion unmet, stated in
 [RELEASE.md](releases/v0.6/RELEASE.md).
+
+## v0.7-005 — the analysis stops being prose
+
+`pnpm score:runs` reads every stored record and reports each one. Two are scored against
+labels written from the hand analysis in RUNS.md; the other seven report as **unlabeled**,
+which is the honest word. They found nothing, there is nothing to score them against, and
+that is not the same as scoring zero.
+
+| Run | Recall | Precision | Citations | Severity          | Cost per located defect |
+| --- | ------ | --------- | --------- | ----------------- | ----------------------- |
+| 5   | 1/1    | 1/1       | 1/1       | 1/1 exact         | ~14,000 tokens          |
+| 11  | 2/3    | 2/3       | 2/3       | 0/2, inflating +2 | ~34,000 tokens          |
+
+Run 5 is not a 100% agent. It is one finding that happened to be right, and the denominator
+is printed so nobody can read it any other way.
+
+### The rule is now measured against you
+
+A label carries two things: a key saying where the defects actually were, and your own
+verdict on each finding. Keeping both allows a comparison neither permits alone — **the
+matching rule against the person who read the findings**.
+
+Across the four labeled findings they agree on three. The one disagreement is run 11's third
+finding, and it arrives with your own note attached explaining the reading. It is reported
+and never used to adjust the rule, because a rule tuned until it agrees with the run it was
+built from stops predicting anything about the next one.
+
+A label may not claim to list every defect in real code, and the schema refuses one that
+tries. Claiming otherwise would turn every finding you did not recognise into a false
+positive — the exact mistake that would have scored run 5's two genuine discoveries as
+errors.
+
+### Two defects found while building it
+
+**Every scorecard was written to the same filename.** Scoring the runs against a target
+silently overwrote the scorecards produced from their labels. Two measurements of one run
+are two different results, and the most recent is not the true one. They are now filed under
+what they were scored against.
+
+**The key schema would have rejected the label files.** Defect ids allowed only letters, so
+`R11-001` could not have loaded. It survived four milestones because the run-11 key used in
+tests was written as a TypeScript literal and never passed through the schema. Widened, and
+the accepting cases are now tested rather than only the rejecting ones.
+
+**22 new tests**, 925 in total.
 
 ## v0.7-004 — run 11 finally has numbers
 
@@ -176,10 +221,9 @@ now carry a parent and `recordUsage` credits the whole chain.
 
 ## Next planned work
 
-**v0.7-005 — the scorecard script and the hand-label form.** Not started. A command that
-scores a recorded run and writes the scorecard to a file, plus a form for labeling runs made
-against unlabeled code, so the four findings sitting in stored records become data instead of
-prose in RUNS.md.
+**v0.7-006 — the baseline and the regression gate.** Not started. A committed baseline the
+suite enforces, so a change that degrades citation accuracy fails the build instead of
+shipping quietly. The gate must be proved by watching it fail, not by watching it pass.
 
 Seven milestones, six of them free: a run-record schema, an answer-key format and a labeled
 target with clean control files, a documented matching rule, pure metric functions, a

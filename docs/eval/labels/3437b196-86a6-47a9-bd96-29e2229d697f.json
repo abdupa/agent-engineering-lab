@@ -1,0 +1,81 @@
+{
+  "runId": "3437b196-86a6-47a9-bd96-29e2229d697f",
+  "labeledOn": "2026-09-17",
+  "labeledBy": "abe",
+  "source": "docs/releases/v0.6/RUNS.md, Run 11",
+  "notes": "Run 11 recorded three findings against apps/api/src/audit and all three were the same time-of-check/time-of-use observation applied to three files. The class is real. Every one was rated high, for a defect that needs an attacker who can already write symlinks into the audited tree, so all three are keyed low here and the inflation is the point.",
+  "key": {
+    "target": "audit-tools-as-of-run-11",
+    "version": 1,
+    "createdAt": "2026-09-17",
+    "tree": ".",
+    "exhaustive": false,
+    "description": "The three observations run 11 reported, keyed at the lines a person confirmed by hand rather than at the lines the agent cited. Not exhaustive: real code, nobody enumerated its defects.",
+    "files": [
+      {
+        "path": "read-file.tool.ts",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "expected": "defects"
+      },
+      {
+        "path": "grep.tool.ts",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "expected": "defects"
+      },
+      {
+        "path": "report-finding.tool.ts",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "expected": "defects"
+      }
+    ],
+    "defects": [
+      {
+        "id": "R11-001",
+        "path": "read-file.tool.ts",
+        "line": 35,
+        "endLine": 35,
+        "severity": "low",
+        "summary": "Resolve and open are separate steps",
+        "why": "RUNS.md confirms line 35 is the resolveExisting call the claim is about. Keyed low because the attack needs someone who can already write symlinks into the tree being audited, which buys them little over editing the files directly."
+      },
+      {
+        "id": "R11-002",
+        "path": "grep.tool.ts",
+        "line": 65,
+        "endLine": 65,
+        "severity": "low",
+        "summary": "The path join the claim is actually about",
+        "why": "RUNS.md records the join on line 65 and the NUL-byte check on line 67. The agent cited 67. This entry is keyed where the defect is, not where the finding pointed, which is the whole reason a key exists."
+      },
+      {
+        "id": "R11-003",
+        "path": "report-finding.tool.ts",
+        "line": 50,
+        "endLine": 55,
+        "severity": "low",
+        "summary": "The gap between resolving at 50 and opening at 55",
+        "why": "RUNS.md records the resolve on line 50 and the open on line 55, with the citedLines guard between them. The span covers the whole gap because that is what the claim is about, and the finding cited 51-54 inside it."
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "index": 0,
+      "verdict": "correct",
+      "defectId": "R11-001",
+      "note": "RUNS.md: Correct. Line 35 is the resolveExisting call and the claim is about it."
+    },
+    {
+      "index": 1,
+      "verdict": "mislocated",
+      "defectId": "R11-002",
+      "note": "RUNS.md: Wrong line. The finding cited 67, which is the NUL-byte check. The join it describes is on line 65."
+    },
+    {
+      "index": 2,
+      "verdict": "mislocated",
+      "defectId": "R11-003",
+      "note": "RUNS.md: Wrong span. The finding cited 51-54, which is the citedLines guard, rather than the resolve at 50 or the open at 55. The matching rule disagrees and counts this as located, because 51-54 sits inside the gap the claim is about. The disagreement is deliberate and recorded rather than tuned away."
+    }
+  ]
+}

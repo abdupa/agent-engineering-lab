@@ -1,6 +1,6 @@
 # v0.7 — Evaluation: an instrument for the audit agent
 
-Status: In progress. v0.7-001 to v0.7-004 complete; v0.7-005 not started.
+Status: In progress. v0.7-001 to v0.7-005 complete; v0.7-006 not started.
 
 ## The product requirement that earns this release
 
@@ -150,15 +150,15 @@ that the scorer can tell.
 
 ## Milestones
 
-| Task     | Objective and required outcome                                                                                                                                                   | Evidence / exit criteria                                                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| v0.7-001 | Run-record schema and loader. Every one of the nine stored records parses, or the schema is wrong and says which field.                                                          | All nine records in `docs/releases/v0.6/runs/` load. A truncated, an empty and a hand-corrupted record each fail with a distinct reason.    |
-| v0.7-002 | Answer-key format and the first labeled target: real-looking defects, **plus clean files that contain none**, with per-file content hashes.                                      | Key parses; hashes match; the control files are listed in the key as expected-empty.                                                        |
-| v0.7-003 | Matching rule. One documented rule deciding when a finding matches a keyed defect, and what "unkeyed" means.                                                                     | Tests for exact line, line inside a keyed span, adjacent-but-outside, right file wrong line, right line wrong file, and duplicate findings. |
-| v0.7-004 | Metrics over (record, key): precision, recall, citation accuracy, severity agreement, duplicate-claim rate, tokens per finding, findings per 10k tokens. Pure functions, no I/O. | Hand-computed expected values on synthetic records. Denominators reported beside every rate, so 1/1 never prints as 100%.                   |
-| v0.7-005 | `scripts/score-run.ts` and a hand-label form for runs against unlabeled code, so the four findings stored in records become data instead of prose.                               | Scorecards written for all nine stored records; the two that produced findings carry hand labels.                                           |
-| v0.7-006 | Baseline and regression gate in the suite.                                                                                                                                       | A committed baseline file; the gate fails when a scorecard drops below it; a test proves the gate fails, rather than asserting it passes.   |
-| v0.7-007 | **One live run against the labeled target.** The only paid step, and the first number that describes the current agent rather than a stored one.                                 | Recorded in `docs/releases/v0.7/RUNS.md` with its scorecard, and the prompt changes from 2026-09-17 finally have a measurement beside them. |
+| Task     | Objective and required outcome                                                                                                                                                   | Evidence / exit criteria                                                                                                                                                                          |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v0.7-001 | Run-record schema and loader. Every one of the nine stored records parses, or the schema is wrong and says which field.                                                          | All nine records in `docs/releases/v0.6/runs/` load. A truncated, an empty and a hand-corrupted record each fail with a distinct reason.                                                          |
+| v0.7-002 | Answer-key format and the first labeled target: real-looking defects, **plus clean files that contain none**, with per-file content hashes.                                      | Key parses; hashes match; the control files are listed in the key as expected-empty.                                                                                                              |
+| v0.7-003 | Matching rule. One documented rule deciding when a finding matches a keyed defect, and what "unkeyed" means.                                                                     | Tests for exact line, line inside a keyed span, adjacent-but-outside, right file wrong line, right line wrong file, and duplicate findings.                                                       |
+| v0.7-004 | Metrics over (record, key): precision, recall, citation accuracy, severity agreement, duplicate-claim rate, tokens per finding, findings per 10k tokens. Pure functions, no I/O. | Hand-computed expected values on synthetic records. Denominators reported beside every rate, so 1/1 never prints as 100%.                                                                         |
+| v0.7-005 | `scripts/score-run.ts` and a hand-label form for runs against unlabeled code, so the four findings stored in records become data instead of prose.                               | The script reports every stored record with a status; the two that produced findings carry labels and scorecards, and the other seven report as unlabeled rather than as runs that found nothing. |
+| v0.7-006 | Baseline and regression gate in the suite.                                                                                                                                       | A committed baseline file; the gate fails when a scorecard drops below it; a test proves the gate fails, rather than asserting it passes.                                                         |
+| v0.7-007 | **One live run against the labeled target.** The only paid step, and the first number that describes the current agent rather than a stored one.                                 | Recorded in `docs/releases/v0.7/RUNS.md` with its scorecard, and the prompt changes from 2026-09-17 finally have a measurement beside them.                                                       |
 
 v0.7-007 is last deliberately. Everything before it is free, and a live run spent before
 the scorer exists produces another anecdote.
@@ -178,6 +178,38 @@ Prettier would reformat the fixture, which changes bytes the key has hashed and 
 target unscoreable. ESLint would report the planted defects as errors and fail the gate.
 Both exclusions are recorded where they are made, since a future reader finding an
 un-linted directory deserves the reason rather than a mystery.
+
+### What v0.7-005 produced, and one thing it corrected
+
+`pnpm score:runs` reads every stored record and reports a status for each. Two are scored
+against labels; seven report as **unlabeled**, which is the honest word — they found nothing
+and there is nothing to score them against, and that is not the same as scoring zero.
+
+**Labels carry both a key and the reader's verdicts.** The key lets the existing matcher and
+metrics run unchanged, so a labeled real run is scored exactly like a synthetic target. The
+verdicts record what the person concluded in their own vocabulary. Keeping both allows the
+comparison neither permits alone: **the rule measured against the person**. Across the four
+labeled findings they agree on three. The one disagreement is run 11's third finding, it is
+reported with the reader's own note attached, and it is never used to adjust the rule —
+tuning a rule until it agrees with the run it was built from stops it predicting anything
+about the next one.
+
+**A label may not claim to be exhaustive.** A key over real code cannot honestly say it
+lists every defect in it, and the schema refuses one that tries. Claiming otherwise would
+turn every finding the reader did not recognise into a false positive, which is exactly the
+mistake that would have scored run 5's two genuine discoveries as errors.
+
+**One defect found while using the script.** Every scorecard was written to
+`<runId>.json`, so scoring the same runs against a target silently overwrote the scorecards
+produced from their labels. Two measurements of one run are two different results and the
+most recent is not the true one. Scorecards are now filed under what they were scored
+against.
+
+**A latent defect the tests had not caught.** The key schema allowed only letters in a
+defect id, which would have rejected `R11-001` — the label files could not have loaded. It
+survived because the run-11 key used in tests was a TypeScript literal that never passed
+through the schema. Widened, with the accepting cases now tested rather than only the
+rejecting ones.
 
 ### The first numbers, and the two rules that govern all of them
 

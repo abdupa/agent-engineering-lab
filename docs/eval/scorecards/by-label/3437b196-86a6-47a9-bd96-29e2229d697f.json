@@ -1,0 +1,83 @@
+{
+  "runId": "3437b196-86a6-47a9-bd96-29e2229d697f",
+  "model": "gpt-5.6-luna",
+  "outcome": "BUDGET_EXCEEDED",
+  "target": "audit-tools-as-of-run-11",
+  "keyVersion": 1,
+  "exhaustive": false,
+  "findings": 3,
+  "keyedDefects": 3,
+  "outcomes": {
+    "matched": 2,
+    "duplicate": 0,
+    "near_miss": 1,
+    "file_only": 0,
+    "unkeyed": 0
+  },
+  "recall": {
+    "numerator": 2,
+    "denominator": 3,
+    "value": 0.6666666666666666
+  },
+  "precision": {
+    "numerator": 2,
+    "denominator": 3,
+    "value": 0.6666666666666666
+  },
+  "citationAccuracy": {
+    "numerator": 2,
+    "denominator": 3,
+    "value": 0.6666666666666666
+  },
+  "controlFalseAlarms": {
+    "numerator": 0,
+    "denominator": 3,
+    "value": 0
+  },
+  "duplicateRate": {
+    "numerator": 0,
+    "denominator": 3,
+    "value": 0
+  },
+  "severity": {
+    "exact": 0,
+    "over": 2,
+    "under": 0,
+    "agreement": {
+      "numerator": 0,
+      "denominator": 2,
+      "value": 0
+    },
+    "meanSignedDelta": 2
+  },
+  "cost": {
+    "totalTokens": 68157,
+    "providerCalls": 13,
+    "locatedDefectsPer10kTokens": 0.2934401455463122,
+    "tokensPerLocatedDefect": 34078.5
+  },
+  "missed": [
+    "R11-002"
+  ],
+  "findingsOnUnknownFiles": 0,
+  "scoredAgainst": "by-label",
+  "labeledBy": "abe",
+  "labeledOn": "2026-09-17",
+  "ruleAgreement": {
+    "agreement": {
+      "numerator": 2,
+      "denominator": 3,
+      "value": 0.6666666666666666
+    },
+    "compared": 3,
+    "skipped": 0,
+    "disagreements": [
+      {
+        "index": 2,
+        "verdict": "mislocated",
+        "outcome": "matched",
+        "note": "RUNS.md: Wrong span. The finding cited 51-54, which is the citedLines guard, rather than the resolve at 50 or the open at 55. The matching rule disagrees and counts this as located, because 51-54 sits inside the gap the claim is about. The disagreement is deliberate and recorded rather than tuned away."
+      }
+    ]
+  }
+}

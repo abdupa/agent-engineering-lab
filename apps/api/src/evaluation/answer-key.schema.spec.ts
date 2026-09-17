@@ -150,15 +150,28 @@ describe('paths and digests', () => {
     },
   );
 
-  it.each([['ss-001'], ['SS-1'], ['SS001'], ['TOOLONGPREFIX-001']])(
-    'rejects the defect id %p',
+  it.each([['SS-001'], ['R11-002'], ['A1-999']])(
+    'accepts the defect id %p',
     (id) => {
       const key = validKey();
       expect(
         parseAnswerKey({ ...key, defects: [{ ...key.defects[0], id }] }).ok,
-      ).toBe(false);
+      ).toBe(true);
     },
   );
+
+  it.each([
+    ['ss-001'],
+    ['SS-1'],
+    ['SS001'],
+    ['TOOLONGPREFIX-001'],
+    ['1SS-001'],
+  ])('rejects the defect id %p', (id) => {
+    const key = validKey();
+    expect(
+      parseAnswerKey({ ...key, defects: [{ ...key.defects[0], id }] }).ok,
+    ).toBe(false);
+  });
 });
 
 describe('what a rejection is allowed to say', () => {

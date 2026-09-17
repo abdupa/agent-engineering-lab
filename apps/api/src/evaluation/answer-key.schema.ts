@@ -36,7 +36,12 @@ export const KeyedFileSchema = z.object({
 });
 
 export const KeyedDefectSchema = z.object({
-  id: z.string().regex(/^[A-Z]{2,6}-\d{3}$/, 'must look like SS-001'),
+  /**
+   * A prefix naming the target and a three-digit number: SS-001, R11-002. Digits are
+   * allowed after the first character so a run number can appear in the prefix, which is
+   * how labels over real runs name theirs.
+   */
+  id: z.string().regex(/^[A-Z][A-Z0-9]{1,5}-\d{3}$/, 'must look like SS-001'),
   path: TreePathSchema,
   /**
    * `line` to `endLine` is the span a finding may cite and still be counted as located
