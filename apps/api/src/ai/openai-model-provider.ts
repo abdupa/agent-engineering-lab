@@ -156,19 +156,45 @@ export class OpenAIModelProvider implements ModelProvider {
         item.content.some((content) => content.type === 'refusal'),
     );
     if (refused) throw new ModelProviderError('REFUSED');
-    if (!response.output_text?.trim())
-      throw this.invalidOutput('empty_output_text');
+
+    /**
+     * One structured result, not the concatenation of every text part.
+     *
+     * `response.output_text` joins all of them, and the model does sometimes emit the
+     * same object twice. Each half parses; the join does not, and it reaches the
+     * application as an unparseable-JSON failure with no hint of the cause. Observed
+     * live: two identical decisions, 190 characters, zero escapes.
+     */
+    const parts: string[] = [];
+    for (const item of response.output) {
+      if (item.type !== 'message') continue;
+      for (const content of item.content) {
+        if (content.type === 'output_text') parts.push(content.text);
+      }
+    }
+    const text = (parts[0] ?? response.output_text ?? '').trim();
+    if (!text) throw this.invalidOutput('empty_output_text');
+    if (parts.length > 1) {
+      // Recoverable, and worth seeing: the first part is used, the rest discarded.
+      this.logger.warn({
+        event: 'provider_extra_output_parts',
+        ...correlationFields(),
+        provider: 'openai',
+        parts: parts.length,
+        usedFirst: true,
+      });
+    }
 
     let data: unknown;
     try {
-      data = JSON.parse(response.output_text);
+      data = JSON.parse(text);
     } catch {
       // Shape metrics, not content. Whether the text ends in a closing brace separates
       // "cut off mid-value" from "complete but badly escaped", which need different
       // fixes and were previously indistinguishable.
-      const text = response.output_text;
       throw this.invalidOutput('unparseable_json', {
         outputTextLength: text.length,
+        outputParts: parts.length,
         endsWithBrace: text.trimEnd().endsWith('}'),
         quoteCount: (text.match(/"/g) ?? []).length,
         backslashCount: (text.match(/\\/g) ?? []).length,

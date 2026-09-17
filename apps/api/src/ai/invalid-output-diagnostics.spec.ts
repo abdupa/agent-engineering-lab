@@ -226,3 +226,102 @@ describe('unparseable output shape', () => {
     expect(String(entry()?.sample)).toHaveLength(400);
   });
 });
+
+describe('duplicated output parts', () => {
+  let fetchMock: jest.MockedFunction<typeof fetch>;
+  let warnings: jest.SpyInstance;
+  let provider: ModelProvider;
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    warnings = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    fetchMock = jest.fn();
+    provider = new OpenAIModelProvider(
+      new OpenAI({
+        apiKey: 'test-only-key',
+        fetch: observeOpenAIFetch(fetchMock),
+        logLevel: 'off',
+      }),
+      'configured-model',
+    );
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  function respondWithParts(texts: string[]) {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'resp_test',
+          object: 'response',
+          status: 'completed',
+          output: [
+            {
+              type: 'message',
+              id: 'msg_test',
+              role: 'assistant',
+              status: 'completed',
+              content: texts.map((text) => ({
+                type: 'output_text',
+                text,
+                annotations: [],
+              })),
+            },
+          ],
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+  }
+
+  const valid = '{"summary":"Example","tags":[]}';
+
+  it('uses the first part instead of the concatenation', async () => {
+    // Observed live: the model emitted one decision twice. Each half parses; joined
+    // they do not, and it surfaced as unparseable JSON with no hint of the cause.
+    respondWithParts([valid, valid]);
+
+    await expect(
+      provider.generateStructured(generationRequest),
+    ).resolves.toEqual({ summary: 'Example', tags: [] });
+  });
+
+  it('records that parts were discarded rather than doing it silently', async () => {
+    respondWithParts([valid, valid, valid]);
+    await provider.generateStructured(generationRequest);
+
+    const entry = warnings.mock.calls
+      .map(([value]) => value as Record<string, unknown>)
+      .find((value) => value?.event === 'provider_extra_output_parts');
+    expect(entry).toMatchObject({ parts: 3, usedFirst: true });
+    // Still no payload in the log.
+    expect(JSON.stringify(entry)).not.toContain('Example');
+  });
+
+  it('is quiet when there is only one part', async () => {
+    respondWithParts([valid]);
+    await provider.generateStructured(generationRequest);
+    expect(
+      warnings.mock.calls
+        .map(([value]) => value as Record<string, unknown>)
+        .some((value) => value?.event === 'provider_extra_output_parts'),
+    ).toBe(false);
+  });
+
+  it('reports the part count when the first part is itself unparseable', async () => {
+    respondWithParts(['not json at all', valid]);
+    await expect(
+      provider.generateStructured(generationRequest),
+    ).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+
+    const entry = warnings.mock.calls
+      .map(([value]) => value as Record<string, unknown>)
+      .find((value) => value?.event === 'provider_invalid_output');
+    expect(entry).toMatchObject({
+      reason: 'unparseable_json',
+      outputParts: 2,
+    });
+  });
+});

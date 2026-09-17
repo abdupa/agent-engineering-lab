@@ -4,6 +4,71 @@ Evidence from real model calls. Each entry records what happened, not what was h
 
 ---
 
+## Run 10 — the sample, and the cause. It was never escaping.
+
+Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments ON · debug sample ON
+
+**Outcome: `DECISION_FAILED` at step 6. Zero findings. Cause finally identified.**
+
+```
+{"decision":{"toolName":"read-file","arguments":{"path":"read-file.tool.ts","maxBytes":12000}}}
+{"decision":{"toolName":"read-file","arguments":{"path":"read-file.tool.ts","maxBytes":12000}}}
+```
+
+**The model emitted the same valid object twice, concatenated.** Each half parses
+perfectly; together they are not JSON.
+
+Every number fits exactly. One object carries 14 quotes; 28 were counted. Zero
+backslashes, because no escaping was ever involved. 190 characters is two 95-character
+objects. `endsWithBrace: true` because the second one does.
+
+### Three wrong hypotheses, in order
+
+1. **Truncation**, from unusually high output-token counts. Disproved by the diagnostic
+   added in response: `reason: unparseable_json`, not `not_completed`.
+2. **Double-escaping through `argumentsJson`**, from 68 quotes against 46 backslashes.
+   Correct for the string transport, and the typed transport removed it — runs 7 and 10
+   show zero backslashes.
+3. **A raw quote inside a `claim`**, from six quotes unaccounted for. Wrong. There were
+   no extra quotes at all; there were exactly twice as many as one object needs, and
+   nobody divided by two.
+
+Each hypothesis was plausible, each was checked rather than assumed, and the first two
+produced real fixes regardless. The third cost a run, and the sample settled it in one
+line.
+
+### Cause
+
+`response.output_text` is a convenience accessor that **concatenates every text part**.
+The provider had used it since v0.1. When the model emits more than one part — which it
+does, occasionally — the join is not valid JSON and arrives as an unparseable-output
+failure with nothing pointing at the reason.
+
+This is a defect in how the SDK is used, not in the model or the transport, and it has
+been present since the first release. Nothing found it because nothing had ever produced
+two parts.
+
+### Fixed
+
+The provider now takes the **first** structured text part rather than the concatenation,
+and logs `provider_extra_output_parts` when it discards any — recoverable, and visible
+rather than silent. `outputParts` was added to the unparseable-output diagnostic so a
+future occurrence names itself.
+
+Four tests: the duplicate is now parsed successfully, discarding is logged with a count
+and no payload, a single part stays quiet, and the part count appears when the first part
+is itself bad.
+
+### Measurements
+
+20,543 tokens over 6 calls. 47 seconds, including two 10-second transport timeouts that
+recovered on the third attempt — the third time the v0.1 retry policy has been seen
+working.
+
+Record: `docs/releases/v0.6/runs/2026-09-17T08-11-14-798Z.json`
+
+---
+
 ## Run 9 — broken before the network, by the previous fix
 
 Date: 2026-09-17 · `gpt-5.6-luna` · typed arguments ON by default · debug sample ON
